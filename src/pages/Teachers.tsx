@@ -1,0 +1,189 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Plus, Search, Edit, Trash2 } from "lucide-react";
+
+interface Teacher {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  subjects: string[];
+  classes: string[];
+  status: string;
+  school_id: string;
+}
+
+const emptyForm = {
+  first_name: "", last_name: "", email: "", phone: "", subjects: "", classes: "",
+};
+
+export default function Teachers() {
+  const { schoolId } = useAuth();
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
+
+  const fetchTeachers = async () => {
+    if (!schoolId) return;
+    setLoading(true);
+    let query = supabase.from("teachers").select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
+    if (search) query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+    const { data, error } = await query;
+    if (error) toast.error(error.message);
+    else setTeachers(data ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchTeachers(); }, [schoolId, search]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!schoolId) { toast.error("No school assigned"); return; }
+
+    const payload = {
+      first_name: form.first_name,
+      last_name: form.last_name,
+      email: form.email || null,
+      phone: form.phone || null,
+      subjects: form.subjects.split(",").map(s => s.trim()).filter(Boolean),
+      classes: form.classes.split(",").map(s => s.trim()).filter(Boolean),
+      school_id: schoolId,
+    };
+
+    if (editId) {
+      const { error } = await supabase.from("teachers").update(payload).eq("id", editId);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Teacher updated");
+    } else {
+      const { error } = await supabase.from("teachers").insert(payload);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Teacher registered");
+    }
+    setDialogOpen(false);
+    setForm(emptyForm);
+    setEditId(null);
+    fetchTeachers();
+  };
+
+  const handleEdit = (t: Teacher) => {
+    setEditId(t.id);
+    setForm({
+      first_name: t.first_name, last_name: t.last_name,
+      email: t.email ?? "", phone: t.phone ?? "",
+      subjects: t.subjects.join(", "), classes: t.classes.join(", "),
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this teacher?")) return;
+    const { error } = await supabase.from("teachers").delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Teacher deleted"); fetchTeachers(); }
+  };
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Teachers</h1>
+          <p className="text-sm text-muted-foreground">{teachers.length} registered teachers</p>
+        </div>
+        <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) { setEditId(null); setForm(emptyForm); } }}>
+          <DialogTrigger asChild>
+            <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add Teacher</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editId ? "Edit Teacher" : "Register Teacher"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>First Name *</Label><Input required value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} /></div>
+                <div><Label>Last Name *</Label><Input required value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
+                <div><Label>Phone</Label><Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} /></div>
+              </div>
+              <div><Label>Subjects (comma-separated)</Label><Input value={form.subjects} onChange={e => setForm({...form, subjects: e.target.value})} placeholder="Math, English, Science" /></div>
+              <div><Label>Classes (comma-separated)</Label><Input value={form.classes} onChange={e => setForm({...form, classes: e.target.value})} placeholder="JSS1, JSS2, SS1" /></div>
+              <Button type="submit" className="w-full">{editId ? "Update" : "Register"} Teacher</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card className="shadow-card">
+        <CardHeader className="pb-3">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search teachers..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Subjects</TableHead>
+                  <TableHead>Classes</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+                ) : teachers.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No teachers found</TableCell></TableRow>
+                ) : (
+                  teachers.map(t => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-medium">{t.first_name} {t.last_name}</TableCell>
+                      <TableCell className="text-sm">{t.email ?? "-"}</TableCell>
+                      <TableCell className="text-sm">{t.phone ?? "-"}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {t.subjects.map(s => <Badge key={s} variant="outline" className="text-xs">{s}</Badge>)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {t.classes.map(c => <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={t.status === "active" ? "default" : "secondary"} className="capitalize">{t.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(t)}><Edit className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
