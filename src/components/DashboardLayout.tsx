@@ -3,7 +3,8 @@ import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import {
   GraduationCap, LayoutDashboard, Users, UserCog,
-  School, Menu, X, LogOut, ChevronDown,
+  School, Menu, X, LogOut, ChevronDown, Layers,
+  Calendar, FileText, Megaphone, Home,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +17,11 @@ const navItems = [
   { to: "/dashboard/students", icon: Users, label: "Students" },
   { to: "/dashboard/teachers", icon: UserCog, label: "Teachers" },
   { to: "/dashboard/schools", icon: School, label: "Schools" },
+  { to: "/dashboard/academics", icon: Layers, label: "Academics" },
+  { to: "/dashboard/attendance", icon: Calendar, label: "Attendance" },
+  { to: "/dashboard/grades", icon: FileText, label: "Grades" },
+  { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements" },
+  { to: "/dashboard/parent", icon: Home, label: "Parent Portal" },
 ];
 
 export default function DashboardLayout() {
