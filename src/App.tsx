@@ -10,6 +10,11 @@ import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Teachers from "./pages/Teachers";
 import Schools from "./pages/Schools";
+import AcademicStructure from "./pages/AcademicStructure";
+import Attendance from "./pages/Attendance";
+import Grades from "./pages/Grades";
+import ParentPortal from "./pages/ParentPortal";
+import Announcements from "./pages/Announcements";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +42,11 @@ const App = () => (
               <Route path="students" element={<Students />} />
               <Route path="teachers" element={<Teachers />} />
               <Route path="schools" element={<Schools />} />
+              <Route path="academics" element={<AcademicStructure />} />
+              <Route path="attendance" element={<Attendance />} />
+              <Route path="grades" element={<Grades />} />
+              <Route path="parent" element={<ParentPortal />} />
+              <Route path="announcements" element={<Announcements />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
