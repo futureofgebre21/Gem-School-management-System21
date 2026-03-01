@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import {
   GraduationCap, LayoutDashboard, Users, UserCog,
   School, Menu, X, LogOut, ChevronDown, Layers,
-  Calendar, FileText, Megaphone, Home,
+  Calendar, FileText, Megaphone, Home, DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -20,6 +20,7 @@ const navItems = [
   { to: "/dashboard/academics", icon: Layers, label: "Academics" },
   { to: "/dashboard/attendance", icon: Calendar, label: "Attendance" },
   { to: "/dashboard/grades", icon: FileText, label: "Grades" },
+  { to: "/dashboard/fees", icon: DollarSign, label: "Fees" },
   { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements" },
   { to: "/dashboard/parent", icon: Home, label: "Parent Portal" },
 ];
@@ -33,9 +34,22 @@ export default function DashboardLayout() {
     ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : user?.email?.slice(0, 2).toUpperCase() ?? "U";
 
+  // Filter nav items based on role
+  const filteredNav = navItems.filter(item => {
+    if (userRole === "parent") {
+      return ["/dashboard", "/dashboard/parent"].includes(item.to);
+    }
+    if (userRole === "student") {
+      return ["/dashboard", "/dashboard/grades", "/dashboard/attendance"].includes(item.to);
+    }
+    if (userRole === "teacher") {
+      return item.to !== "/dashboard/schools" && item.to !== "/dashboard/fees" && item.to !== "/dashboard/parent";
+    }
+    return true; // admin & super_admin see everything
+  });
+
   return (
     <div className="min-h-screen flex bg-muted/40">
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground transform transition-transform duration-200 lg:translate-x-0 lg:static ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -51,7 +65,7 @@ export default function DashboardLayout() {
           </div>
         </div>
         <nav className="p-3 space-y-1">
-          {navItems.map((item) => {
+          {filteredNav.map((item) => {
             const active = location.pathname === item.to;
             return (
               <Link
@@ -72,12 +86,10 @@ export default function DashboardLayout() {
         </nav>
       </aside>
 
-      {/* Overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden text-foreground">

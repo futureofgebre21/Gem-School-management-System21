@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Search, Edit, Trash2, Download, Upload } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Download } from "lucide-react";
 
 interface Student {
   id: string;
@@ -40,6 +41,7 @@ export default function Students() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterClass, setFilterClass] = useState("");
+  const [filterGender, setFilterGender] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -50,25 +52,19 @@ export default function Students() {
     let query = supabase.from("students").select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
     if (search) query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,student_id_number.ilike.%${search}%`);
     if (filterClass) query = query.eq("class", filterClass);
+    if (filterGender) query = query.eq("gender", filterGender);
     const { data, error } = await query;
     if (error) toast.error(error.message);
     else setStudents(data ?? []);
     setLoading(false);
   };
 
-  useEffect(() => { fetchStudents(); }, [schoolId, search, filterClass]);
+  useEffect(() => { fetchStudents(); }, [schoolId, search, filterClass, filterGender]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!schoolId) { toast.error("No school assigned"); return; }
-
-    const payload = {
-      ...form,
-      school_id: schoolId,
-      gender: form.gender || null,
-      date_of_birth: form.date_of_birth || null,
-    };
-
+    const payload = { ...form, school_id: schoolId, gender: form.gender || null, date_of_birth: form.date_of_birth || null };
     if (editId) {
       const { error } = await supabase.from("students").update(payload).eq("id", editId);
       if (error) { toast.error(error.message); return; }
@@ -78,21 +74,12 @@ export default function Students() {
       if (error) { toast.error(error.message); return; }
       toast.success("Student registered");
     }
-    setDialogOpen(false);
-    setForm(emptyForm);
-    setEditId(null);
-    fetchStudents();
+    setDialogOpen(false); setForm(emptyForm); setEditId(null); fetchStudents();
   };
 
   const handleEdit = (s: Student) => {
     setEditId(s.id);
-    setForm({
-      first_name: s.first_name, last_name: s.last_name,
-      class: s.class ?? "", section: s.section ?? "",
-      gender: s.gender ?? "", parent_name: s.parent_name ?? "",
-      parent_phone: s.parent_phone ?? "", parent_email: s.parent_email ?? "",
-      address: s.address ?? "", date_of_birth: s.date_of_birth ?? "",
-    });
+    setForm({ first_name: s.first_name, last_name: s.last_name, class: s.class ?? "", section: s.section ?? "", gender: s.gender ?? "", parent_name: s.parent_name ?? "", parent_phone: s.parent_phone ?? "", parent_email: s.parent_email ?? "", address: s.address ?? "", date_of_birth: s.date_of_birth ?? "" });
     setDialogOpen(true);
   };
 
@@ -108,64 +95,91 @@ export default function Students() {
     const rows = students.map(s => [s.student_id_number, s.first_name, s.last_name, s.class, s.section, s.gender, s.status, s.parent_name, s.parent_phone]);
     const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "students.csv";
-    a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "students.csv"; a.click();
   };
 
   const classes = [...new Set(students.map(s => s.class).filter(Boolean))];
+  const maleCount = students.filter(s => s.gender === "male").length;
+  const femaleCount = students.filter(s => s.gender === "female").length;
+
+  const renderTable = (data: Student[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Student ID</TableHead><TableHead>Name</TableHead><TableHead>Class</TableHead>
+          <TableHead>Gender</TableHead><TableHead>Status</TableHead><TableHead>Parent</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {loading ? (
+          <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+        ) : data.length === 0 ? (
+          <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No students found</TableCell></TableRow>
+        ) : (
+          data.map(s => (
+            <TableRow key={s.id}>
+              <TableCell className="font-mono text-sm">{s.student_id_number}</TableCell>
+              <TableCell className="font-medium">{s.first_name} {s.last_name}</TableCell>
+              <TableCell>{s.class} {s.section && `(${s.section})`}</TableCell>
+              <TableCell className="capitalize">{s.gender ?? "-"}</TableCell>
+              <TableCell><Badge variant={s.status === "active" ? "default" : "secondary"} className="capitalize">{s.status}</Badge></TableCell>
+              <TableCell className="text-sm">{s.parent_name ?? "-"}</TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="icon" onClick={() => handleEdit(s)}><Edit className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
 
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Students</h1>
-          <p className="text-sm text-muted-foreground">{students.length} registered students</p>
+          <p className="text-sm text-muted-foreground">
+            {students.length} total • <span className="text-info">♂ {maleCount} Male</span> • <span className="text-secondary">♀ {femaleCount} Female</span>
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={exportCSV}>
-            <Download className="w-4 h-4 mr-1" /> Export
-          </Button>
+          <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 mr-1" /> Export</Button>
           <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) { setEditId(null); setForm(emptyForm); } }}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add Student</Button>
-            </DialogTrigger>
+            <DialogTrigger asChild><Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add Student</Button></DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editId ? "Edit Student" : "Register Student"}</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle>{editId ? "Edit Student" : "Register Student"}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>First Name *</Label><Input required value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} /></div>
-                  <div><Label>Last Name *</Label><Input required value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} /></div>
+                  <div><Label>First Name *</Label><Input required value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} /></div>
+                  <div><Label>Last Name *</Label><Input required value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} /></div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <div><Label>Class</Label><Input value={form.class} onChange={e => setForm({...form, class: e.target.value})} placeholder="e.g. JSS1" /></div>
-                  <div><Label>Section</Label><Input value={form.section} onChange={e => setForm({...form, section: e.target.value})} placeholder="e.g. A" /></div>
+                  <div><Label>Class</Label><Input value={form.class} onChange={e => setForm({ ...form, class: e.target.value })} placeholder="e.g. JSS1" /></div>
+                  <div><Label>Section</Label><Input value={form.section} onChange={e => setForm({ ...form, section: e.target.value })} placeholder="e.g. A" /></div>
                   <div>
                     <Label>Gender</Label>
-                    <Select value={form.gender} onValueChange={v => setForm({...form, gender: v})}>
+                    <Select value={form.gender} onValueChange={v => setForm({ ...form, gender: v })}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div><Label>Date of Birth</Label><Input type="date" value={form.date_of_birth} onChange={e => setForm({...form, date_of_birth: e.target.value})} /></div>
+                <div><Label>Date of Birth</Label><Input type="date" value={form.date_of_birth} onChange={e => setForm({ ...form, date_of_birth: e.target.value })} /></div>
                 <div className="border-t pt-3">
                   <p className="text-sm font-medium mb-2 text-muted-foreground">Parent / Guardian</p>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Name</Label><Input value={form.parent_name} onChange={e => setForm({...form, parent_name: e.target.value})} /></div>
-                    <div><Label>Phone</Label><Input value={form.parent_phone} onChange={e => setForm({...form, parent_phone: e.target.value})} /></div>
+                    <div><Label>Name</Label><Input value={form.parent_name} onChange={e => setForm({ ...form, parent_name: e.target.value })} /></div>
+                    <div><Label>Phone</Label><Input value={form.parent_phone} onChange={e => setForm({ ...form, parent_phone: e.target.value })} /></div>
                   </div>
-                  <div className="mt-2"><Label>Email</Label><Input type="email" value={form.parent_email} onChange={e => setForm({...form, parent_email: e.target.value})} /></div>
+                  <div className="mt-2"><Label>Email</Label><Input type="email" value={form.parent_email} onChange={e => setForm({ ...form, parent_email: e.target.value })} /></div>
                 </div>
-                <div><Label>Address</Label><Input value={form.address} onChange={e => setForm({...form, address: e.target.value})} /></div>
+                <div><Label>Address</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
                 <Button type="submit" className="w-full">{editId ? "Update" : "Register"} Student</Button>
               </form>
             </DialogContent>
@@ -181,56 +195,35 @@ export default function Students() {
               <Input placeholder="Search students..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
             <Select value={filterClass} onValueChange={v => setFilterClass(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="All Classes" /></SelectTrigger>
+              <SelectTrigger className="w-36"><SelectValue placeholder="All Classes" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
                 {classes.map(c => <SelectItem key={c} value={c!}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={filterGender} onValueChange={v => setFilterGender(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-32"><SelectValue placeholder="All Gender" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Gender</SelectItem>
+                <SelectItem value="male">♂ Male</SelectItem>
+                <SelectItem value="female">♀ Female</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Gender</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Parent</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
-                ) : students.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No students found</TableCell></TableRow>
-                ) : (
-                  students.map(s => (
-                    <TableRow key={s.id}>
-                      <TableCell className="font-mono text-sm">{s.student_id_number}</TableCell>
-                      <TableCell className="font-medium">{s.first_name} {s.last_name}</TableCell>
-                      <TableCell>{s.class} {s.section && `(${s.section})`}</TableCell>
-                      <TableCell className="capitalize">{s.gender ?? "-"}</TableCell>
-                      <TableCell>
-                        <Badge variant={s.status === "active" ? "default" : "secondary"} className="capitalize">
-                          {s.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{s.parent_name ?? "-"}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(s)}><Edit className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <Tabs defaultValue="all">
+            <div className="px-4">
+              <TabsList className="grid grid-cols-3 w-full max-w-xs">
+                <TabsTrigger value="all">All ({students.length})</TabsTrigger>
+                <TabsTrigger value="male">♂ Male ({maleCount})</TabsTrigger>
+                <TabsTrigger value="female">♀ Female ({femaleCount})</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="all" className="overflow-x-auto">{renderTable(students)}</TabsContent>
+            <TabsContent value="male" className="overflow-x-auto">{renderTable(students.filter(s => s.gender === "male"))}</TabsContent>
+            <TabsContent value="female" className="overflow-x-auto">{renderTable(students.filter(s => s.gender === "female"))}</TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
