@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Teachers from "./pages/Teachers";
@@ -13,6 +14,7 @@ import Schools from "./pages/Schools";
 import AcademicStructure from "./pages/AcademicStructure";
 import Attendance from "./pages/Attendance";
 import Grades from "./pages/Grades";
+import Fees from "./pages/Fees";
 import ParentPortal from "./pages/ParentPortal";
 import Announcements from "./pages/Announcements";
 import DashboardLayout from "./components/DashboardLayout";
@@ -27,6 +29,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
+  const { user, loading, userRole, schoolId } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  // If user has no role or school assigned, redirect to onboarding
+  if (!userRole && !schoolId) return <Navigate to="/onboarding" replace />;
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -37,7 +48,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<OnboardingGuard><DashboardLayout /></OnboardingGuard>}>
               <Route index element={<Dashboard />} />
               <Route path="students" element={<Students />} />
               <Route path="teachers" element={<Teachers />} />
@@ -45,6 +57,7 @@ const App = () => (
               <Route path="academics" element={<AcademicStructure />} />
               <Route path="attendance" element={<Attendance />} />
               <Route path="grades" element={<Grades />} />
+              <Route path="fees" element={<Fees />} />
               <Route path="parent" element={<ParentPortal />} />
               <Route path="announcements" element={<Announcements />} />
             </Route>
