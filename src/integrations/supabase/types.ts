@@ -534,6 +534,7 @@ export type Database = {
           logo_url: string | null
           name: string
           phone: string | null
+          school_code: string | null
           type: string
           updated_at: string
         }
@@ -547,6 +548,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           phone?: string | null
+          school_code?: string | null
           type?: string
           updated_at?: string
         }
@@ -560,6 +562,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           phone?: string | null
+          school_code?: string | null
           type?: string
           updated_at?: string
         }
@@ -998,6 +1001,14 @@ export type Database = {
           _type?: string
         }
         Returns: string
+      }
+      get_school_by_code: {
+        Args: { _code: string }
+        Returns: {
+          id: string
+          name: string
+          school_code: string
+        }[]
       }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
       has_role: {

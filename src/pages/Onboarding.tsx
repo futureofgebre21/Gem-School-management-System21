@@ -8,9 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { GraduationCap, UserCog, Users, Home, ArrowRight, Building2 } from "lucide-react";
+import { GraduationCap, UserCog, Users, Home, ArrowRight, Building2, Hash, CheckCircle2, Copy } from "lucide-react";
 
-type Step = "role-select" | "school-select" | "school-create";
+type Step = "role-select" | "school-code" | "school-create" | "school-created";
 
 const roles = [
   { value: "school_admin", label: "Admin", icon: UserCog, desc: "Create & manage your school" },
@@ -23,26 +23,39 @@ export default function Onboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("role-select");
-  const [schools, setSchools] = useState<any[]>([]);
-  const [selectedSchool, setSelectedSchool] = useState("");
-  const [schoolType, setSchoolType] = useState("private");
   const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(false);
+  const [schoolType, setSchoolType] = useState("private");
   const [newSchool, setNewSchool] = useState({ name: "", city: "", country: "Nigeria", phone: "", email: "" });
 
-  useEffect(() => {
-    supabase.from("schools").select("id, name, type").order("name")
-      .then(({ data }) => setSchools(data ?? []));
-  }, []);
+  // School code join state
+  const [schoolCode, setSchoolCode] = useState("");
+  const [foundSchool, setFoundSchool] = useState<{ id: string; name: string; school_code: string } | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
+
+  // After admin creates school
+  const [createdSchoolCode, setCreatedSchoolCode] = useState("");
+
+  const lookupSchoolCode = async () => {
+    if (!schoolCode.trim()) { toast.error("Please enter a school code"); return; }
+    setLookingUp(true);
+    setFoundSchool(null);
+    const { data, error } = await supabase.rpc("get_school_by_code", { _code: schoolCode.trim() });
+    setLookingUp(false);
+    if (error || !data || (Array.isArray(data) && data.length === 0)) {
+      toast.error("No school found with that code. Please check and try again.");
+      return;
+    }
+    const school = Array.isArray(data) ? data[0] : data;
+    setFoundSchool(school);
+  };
 
   const assignRole = async (schoolId: string, role: string) => {
     if (!user) return;
     setLoading(true);
-    // Insert role (RLS only allows non-admin roles for self-assignment)
     const { error: roleError } = await supabase.from("user_roles")
       .insert({ user_id: user.id, role: role as any, school_id: schoolId });
     if (roleError) { toast.error(roleError.message); setLoading(false); return; }
-    // Update profile school_id (RLS ensures it matches user_roles)
     await supabase.from("profiles").update({ school_id: schoolId }).eq("id", user.id);
     toast.success("Setup complete! Redirecting...");
     window.location.href = "/dashboard";
@@ -53,19 +66,18 @@ export default function Onboarding() {
     if (selectedRole === "school_admin") {
       setStep("school-create");
     } else {
-      setStep("school-select");
+      setStep("school-code");
     }
   };
 
-  const handleSelectSchool = () => {
-    if (!selectedSchool) { toast.error("Please select a school"); return; }
-    assignRole(selectedSchool, selectedRole);
+  const handleJoinSchool = () => {
+    if (!foundSchool) { toast.error("Please look up a valid school code first"); return; }
+    assignRole(foundSchool.id, selectedRole);
   };
 
   const handleCreateSchool = async () => {
     if (!newSchool.name.trim()) { toast.error("School name is required"); return; }
     setLoading(true);
-    // Use secure DB function that atomically creates school + assigns admin role
     const { data, error } = await supabase.rpc("create_school_with_admin", {
       _name: newSchool.name,
       _type: schoolType,
@@ -75,8 +87,23 @@ export default function Onboarding() {
       _email: newSchool.email || null,
     });
     if (error) { toast.error(error.message); setLoading(false); return; }
-    toast.success("School created! Redirecting...");
+    // Fetch the generated school code
+    if (data) {
+      const { data: school } = await supabase.from("schools").select("school_code").eq("id", data).single();
+      if (school?.school_code) {
+        setCreatedSchoolCode(school.school_code);
+        setStep("school-created");
+        setLoading(false);
+        return;
+      }
+    }
+    toast.success("School created!");
     window.location.href = "/dashboard";
+  };
+
+  const copyCode = () => {
+    navigator.clipboard.writeText(createdSchoolCode);
+    toast.success("School code copied!");
   };
 
   return (
@@ -128,43 +155,63 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Step 2a: School Selection (for Teacher/Student/Parent) */}
-        {step === "school-select" && (
+        {/* Step 2a: Join School via Code (Teacher/Student/Parent) */}
+        {step === "school-code" && (
           <Card className="shadow-card">
             <CardHeader className="text-center">
-              <CardTitle className="text-xl">Select Your School</CardTitle>
-              <CardDescription>Choose the school you belong to</CardDescription>
+              <CardTitle className="text-xl flex items-center justify-center gap-2">
+                <Hash className="w-5 h-5" /> Enter School Code
+              </CardTitle>
+              <CardDescription>
+                Ask your school administrator for the unique school code to join
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>School</Label>
-                <Select value={selectedSchool} onValueChange={setSelectedSchool}>
-                  <SelectTrigger><SelectValue placeholder="Choose a school" /></SelectTrigger>
-                  <SelectContent>
-                    {schools.map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name} {s.type && <span className="text-muted-foreground">({s.type})</span>}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>School Code</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={schoolCode}
+                    onChange={e => { setSchoolCode(e.target.value.toUpperCase()); setFoundSchool(null); }}
+                    placeholder="e.g. GEM-X1"
+                    className="font-mono text-lg tracking-widest text-center uppercase"
+                    maxLength={10}
+                  />
+                  <Button variant="outline" onClick={lookupSchoolCode} disabled={lookingUp || !schoolCode.trim()}>
+                    {lookingUp ? "..." : "Look Up"}
+                  </Button>
+                </div>
               </div>
-              <Button className="w-full" onClick={handleSelectSchool} disabled={!selectedSchool || loading}>
-                {loading ? "Setting up..." : "Complete Setup"} <ArrowRight className="w-4 h-4 ml-2" />
+
+              {foundSchool && (
+                <div className="flex items-center gap-3 p-4 rounded-lg border-2 border-primary bg-primary/5">
+                  <CheckCircle2 className="w-6 h-6 text-primary shrink-0" />
+                  <div>
+                    <p className="font-semibold text-foreground">{foundSchool.name}</p>
+                    <p className="text-xs text-muted-foreground">Code: {foundSchool.school_code}</p>
+                  </div>
+                </div>
+              )}
+
+              <Button className="w-full" onClick={handleJoinSchool} disabled={!foundSchool || loading}>
+                {loading ? "Joining..." : `Join as ${roles.find(r => r.value === selectedRole)?.label}`}
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
-              <Button variant="ghost" className="w-full" onClick={() => { setStep("role-select"); setSelectedSchool(""); }}>
+              <Button variant="ghost" className="w-full" onClick={() => { setStep("role-select"); setSchoolCode(""); setFoundSchool(null); }}>
                 ← Back to role selection
               </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 2b: Create School (for Admin) */}
+        {/* Step 2b: Create School (Admin) */}
         {step === "school-create" && (
           <Card className="shadow-card">
             <CardHeader className="text-center">
-              <CardTitle className="text-xl">Create Your School</CardTitle>
-              <CardDescription>Set up your school to get started as Admin</CardDescription>
+              <CardTitle className="text-xl flex items-center justify-center gap-2">
+                <Building2 className="w-5 h-5" /> Register Your School
+              </CardTitle>
+              <CardDescription>A unique School Code will be generated automatically</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
@@ -192,10 +239,37 @@ export default function Onboarding() {
                 </div>
               </div>
               <Button className="w-full" onClick={handleCreateSchool} disabled={loading}>
-                {loading ? "Creating..." : "Create School & Continue as Admin"}
+                {loading ? "Creating..." : "Create School"}
               </Button>
               <Button variant="ghost" className="w-full" onClick={() => setStep("role-select")}>
                 ← Back to role selection
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: School Created - Show Code */}
+        {step === "school-created" && (
+          <Card className="shadow-card">
+            <CardHeader className="text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-xl">School Registered!</CardTitle>
+              <CardDescription>Share this code with teachers, students, and parents so they can join your school</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-center gap-3 p-6 rounded-xl border-2 border-dashed border-primary bg-primary/5">
+                <span className="text-3xl font-mono font-bold tracking-widest text-primary">{createdSchoolCode}</span>
+                <Button variant="ghost" size="icon" onClick={copyCode}>
+                  <Copy className="w-5 h-5" />
+                </Button>
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                This is your unique School Code. Anyone with this code can request to join your school.
+              </p>
+              <Button className="w-full" onClick={() => { window.location.href = "/dashboard"; }}>
+                Go to Dashboard <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
           </Card>
