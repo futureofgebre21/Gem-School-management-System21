@@ -38,14 +38,12 @@ export default function Onboarding() {
   const assignRole = async (schoolId: string, role: string) => {
     if (!user) return;
     setLoading(true);
+    // Insert role (RLS only allows non-admin roles for self-assignment)
+    const { error: roleError } = await supabase.from("user_roles")
+      .insert({ user_id: user.id, role: role as any, school_id: schoolId });
+    if (roleError) { toast.error(roleError.message); setLoading(false); return; }
+    // Update profile school_id (RLS ensures it matches user_roles)
     await supabase.from("profiles").update({ school_id: schoolId }).eq("id", user.id);
-    const { data: existing } = await supabase.from("user_roles")
-      .select("id").eq("user_id", user.id).limit(1);
-    if (existing && existing.length > 0) {
-      await supabase.from("user_roles").update({ role: role as any, school_id: schoolId }).eq("user_id", user.id);
-    } else {
-      await supabase.from("user_roles").insert({ user_id: user.id, role: role as any, school_id: schoolId });
-    }
     toast.success("Setup complete! Redirecting...");
     window.location.href = "/dashboard";
   };
@@ -67,11 +65,18 @@ export default function Onboarding() {
   const handleCreateSchool = async () => {
     if (!newSchool.name.trim()) { toast.error("School name is required"); return; }
     setLoading(true);
-    const { data, error } = await supabase.from("schools")
-      .insert({ ...newSchool, type: schoolType })
-      .select("id").single();
+    // Use secure DB function that atomically creates school + assigns admin role
+    const { data, error } = await supabase.rpc("create_school_with_admin", {
+      _name: newSchool.name,
+      _type: schoolType,
+      _city: newSchool.city || null,
+      _country: newSchool.country || null,
+      _phone: newSchool.phone || null,
+      _email: newSchool.email || null,
+    });
     if (error) { toast.error(error.message); setLoading(false); return; }
-    await assignRole(data.id, "school_admin");
+    toast.success("School created! Redirecting...");
+    window.location.href = "/dashboard";
   };
 
   return (
