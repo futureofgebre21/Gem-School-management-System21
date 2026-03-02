@@ -988,6 +988,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_school_with_admin: {
+        Args: {
+          _city?: string
+          _country?: string
+          _email?: string
+          _name: string
+          _phone?: string
+          _type?: string
+        }
+        Returns: string
+      }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
