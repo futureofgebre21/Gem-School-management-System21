@@ -12,14 +12,27 @@ import { toast } from "sonner";
 import { Save, Download, FileText, BarChart3 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
-function getGrade(score: number): string {
-  if (score >= 90) return "A+";
-  if (score >= 80) return "A";
-  if (score >= 70) return "B";
-  if (score >= 60) return "C";
-  if (score >= 50) return "D";
-  if (score >= 40) return "E";
+const GRADING_SCALES = [
+  { value: "5", label: "Out of 5", max: 5 },
+  { value: "10", label: "Out of 10", max: 10 },
+  { value: "20", label: "Out of 20", max: 20 },
+  { value: "40", label: "Out of 40", max: 40 },
+  { value: "60", label: "Out of 60", max: 60 },
+  { value: "100", label: "Out of 100", max: 100 },
+];
+
+function getGradeFromPercentage(pct: number): string {
+  if (pct >= 90) return "A+";
+  if (pct >= 80) return "A";
+  if (pct >= 70) return "B";
+  if (pct >= 60) return "C";
+  if (pct >= 50) return "D";
+  if (pct >= 40) return "E";
   return "F";
+}
+
+function toPercentage(score: number, maxScore: number): number {
+  return (score / maxScore) * 100;
 }
 
 function EnterGradesTab({ schoolId }: { schoolId: string }) {
@@ -28,6 +41,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const [subjectFilter, setSubjectFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [term, setTerm] = useState("First Term");
+  const [scale, setScale] = useState("100");
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [years, setYears] = useState<any[]>([]);
@@ -35,6 +49,8 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const [scores, setScores] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const maxScore = GRADING_SCALES.find(s => s.value === scale)?.max ?? 100;
 
   useEffect(() => {
     Promise.all([
@@ -72,11 +88,12 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const handleSave = async () => {
     setSaving(true);
     const records = students.filter(s => scores[s.id] !== undefined && scores[s.id] !== "").map(s => {
-      const score = parseFloat(scores[s.id]);
+      const rawScore = parseFloat(scores[s.id]);
+      const pct = toPercentage(rawScore, maxScore);
       return {
         student_id: s.id, subject_id: subjectFilter, class_id: classFilter,
         academic_year_id: yearFilter, school_id: schoolId, term,
-        score, grade: getGrade(score), recorded_by: user?.id,
+        score: rawScore, grade: getGradeFromPercentage(pct), recorded_by: user?.id,
       };
     });
     const { error } = await supabase.from("grades").upsert(records, { onConflict: "student_id,subject_id,academic_year_id,term" });
@@ -87,7 +104,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div>
           <Label>Class</Label>
           <Select value={classFilter} onValueChange={setClassFilter}>
@@ -120,10 +137,20 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
             </SelectContent>
           </Select>
         </div>
+        <div>
+          <Label>Scale</Label>
+          <Select value={scale} onValueChange={setScale}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {GRADING_SCALES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {students.length > 0 && (
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-muted-foreground">Grading: <span className="font-semibold text-foreground">Out of {maxScore}</span></p>
           <Button onClick={handleSave} disabled={saving}><Save className="w-4 h-4 mr-1" />{saving ? "Saving..." : "Save Grades"}</Button>
         </div>
       )}
@@ -137,26 +164,41 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       ) : (
         <Table>
           <TableHeader>
-            <TableRow><TableHead>ID</TableHead><TableHead>Name</TableHead><TableHead>Score</TableHead><TableHead>Grade</TableHead></TableRow>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Score (/{maxScore})</TableHead>
+              <TableHead>Percentage</TableHead>
+              <TableHead>Grade</TableHead>
+            </TableRow>
           </TableHeader>
           <TableBody>
             {students.map(s => {
               const score = scores[s.id] ?? "";
               const numScore = parseFloat(score);
+              const pct = !isNaN(numScore) && score !== "" ? toPercentage(numScore, maxScore) : NaN;
               return (
                 <TableRow key={s.id}>
                   <TableCell className="font-mono text-sm">{s.student_id_number}</TableCell>
                   <TableCell className="font-medium">{s.first_name} {s.last_name}</TableCell>
                   <TableCell>
                     <Input
-                      type="number" min="0" max="100" className="w-20"
+                      type="number" min="0" max={maxScore} className="w-20"
                       value={score}
-                      onChange={e => setScores({ ...scores, [s.id]: e.target.value })}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === "" || (parseFloat(val) >= 0 && parseFloat(val) <= maxScore)) {
+                          setScores({ ...scores, [s.id]: val });
+                        }
+                      }}
                     />
                   </TableCell>
                   <TableCell>
-                    {!isNaN(numScore) && score !== "" ? (
-                      <Badge variant={numScore >= 50 ? "default" : "destructive"}>{getGrade(numScore)}</Badge>
+                    {!isNaN(pct) ? <span className="font-medium">{pct.toFixed(1)}%</span> : "-"}
+                  </TableCell>
+                  <TableCell>
+                    {!isNaN(pct) ? (
+                      <Badge variant={pct >= 50 ? "default" : "destructive"}>{getGradeFromPercentage(pct)}</Badge>
                     ) : "-"}
                   </TableCell>
                 </TableRow>
@@ -194,7 +236,6 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
 
     if (error) { toast.error(error.message); setLoading(false); return; }
 
-    // Group by student
     const byStudent: Record<string, { name: string; id_number: string; subjects: { name: string; score: number; grade: string }[]; avg: number }> = {};
     (data ?? []).forEach((g: any) => {
       const key = g.student_id;
@@ -208,7 +249,6 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
       byStudent[key].subjects.push({ name: g.subjects?.name ?? "", score: g.score, grade: g.grade });
     });
 
-    // Calculate averages
     Object.values(byStudent).forEach(s => {
       s.avg = s.subjects.length ? s.subjects.reduce((sum, sub) => sum + sub.score, 0) / s.subjects.length : 0;
     });
@@ -226,7 +266,7 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
         const found = r.subjects.find(s => s.name === sub);
         return found ? found.score : "";
       });
-      return [r.id_number, r.name, ...subScores, r.avg.toFixed(1), getGrade(r.avg)];
+      return [r.id_number, r.name, ...subScores, r.avg.toFixed(1), getGradeFromPercentage(r.avg)];
     });
     const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -281,7 +321,7 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
                 <TableCell className="font-medium">{r.name}</TableCell>
                 <TableCell className="text-sm">{r.subjects.map(s => `${s.name}: ${s.score}`).join(", ")}</TableCell>
                 <TableCell className="font-bold">{r.avg.toFixed(1)}</TableCell>
-                <TableCell><Badge variant={r.avg >= 50 ? "default" : "destructive"}>{getGrade(r.avg)}</Badge></TableCell>
+                <TableCell><Badge variant={r.avg >= 50 ? "default" : "destructive"}>{getGradeFromPercentage(r.avg)}</Badge></TableCell>
               </TableRow>
             ))}
           </TableBody>
