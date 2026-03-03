@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,13 +28,9 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
   const [schoolType, setSchoolType] = useState("private");
   const [newSchool, setNewSchool] = useState({ name: "", city: "", country: "Nigeria", phone: "", email: "" });
-
-  // School code join state
   const [schoolCode, setSchoolCode] = useState("");
   const [foundSchool, setFoundSchool] = useState<{ id: string; name: string; school_code: string } | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
-
-  // After admin creates school
   const [createdSchoolCode, setCreatedSchoolCode] = useState("");
 
   const lookupSchoolCode = async () => {
@@ -55,7 +52,7 @@ export default function Onboarding() {
     setLoading(true);
     const { error: roleError } = await supabase.from("user_roles")
       .insert({ user_id: user.id, role: role as any, school_id: schoolId });
-    if (roleError) { toast.error(roleError.message); setLoading(false); return; }
+    if (roleError) { toast.error(getUserFriendlyError(roleError)); setLoading(false); return; }
     await supabase.from("profiles").update({ school_id: schoolId }).eq("id", user.id);
     toast.success("Setup complete! Redirecting...");
     window.location.href = "/dashboard";
@@ -86,8 +83,7 @@ export default function Onboarding() {
       _phone: newSchool.phone || null,
       _email: newSchool.email || null,
     });
-    if (error) { toast.error(error.message); setLoading(false); return; }
-    // Fetch the generated school code
+    if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return; }
     if (data) {
       const { data: school } = await supabase.from("schools").select("school_code").eq("id", data).single();
       if (school?.school_code) {
@@ -119,7 +115,6 @@ export default function Onboarding() {
           </div>
         </div>
 
-        {/* Step 1: Role Selection */}
         {step === "role-select" && (
           <Card className="shadow-card">
             <CardHeader className="text-center">
@@ -155,7 +150,6 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Step 2a: Join School via Code (Teacher/Student/Parent) */}
         {step === "school-code" && (
           <Card className="shadow-card">
             <CardHeader className="text-center">
@@ -204,7 +198,6 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Step 2b: Create School (Admin) */}
         {step === "school-create" && (
           <Card className="shadow-card">
             <CardHeader className="text-center">
@@ -248,7 +241,6 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Step 3: School Created - Show Code */}
         {step === "school-created" && (
           <Card className="shadow-card">
             <CardHeader className="text-center">

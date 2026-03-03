@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +25,7 @@ function AcademicYearsTab({ schoolId }: { schoolId: string }) {
   const fetch = async () => {
     setLoading(true);
     const { data, error } = await supabase.from("academic_years").select("*").eq("school_id", schoolId).order("start_date", { ascending: false });
-    if (error) toast.error(error.message);
+    if (error) toast.error(getUserFriendlyError(error));
     else setItems(data ?? []);
     setLoading(false);
   };
@@ -36,11 +37,11 @@ function AcademicYearsTab({ schoolId }: { schoolId: string }) {
     const payload = { ...form, school_id: schoolId };
     if (editId) {
       const { error } = await supabase.from("academic_years").update(payload).eq("id", editId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Updated");
     } else {
       const { error } = await supabase.from("academic_years").insert(payload);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Created");
     }
     setDialogOpen(false); setEditId(null); setForm({ name: "", start_date: "", end_date: "", is_current: false }); fetch();
@@ -49,7 +50,7 @@ function AcademicYearsTab({ schoolId }: { schoolId: string }) {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this academic year?")) return;
     const { error } = await supabase.from("academic_years").delete().eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Deleted"); fetch(); }
+    if (error) toast.error(getUserFriendlyError(error)); else { toast.success("Deleted"); fetch(); }
   };
 
   return (
@@ -113,7 +114,7 @@ function ClassesTab({ schoolId }: { schoolId: string }) {
   const fetch = async () => {
     setLoading(true);
     const { data, error } = await supabase.from("classes").select("*").eq("school_id", schoolId).order("name");
-    if (error) toast.error(error.message); else setItems(data ?? []);
+    if (error) toast.error(getUserFriendlyError(error)); else setItems(data ?? []);
     setLoading(false);
   };
 
@@ -124,11 +125,11 @@ function ClassesTab({ schoolId }: { schoolId: string }) {
     const payload = { ...form, school_id: schoolId, description: form.description || null };
     if (editId) {
       const { error } = await supabase.from("classes").update(payload).eq("id", editId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Updated");
     } else {
       const { error } = await supabase.from("classes").insert(payload);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Created");
     }
     setDialogOpen(false); setEditId(null); setForm({ name: "", description: "" }); fetch();
@@ -137,7 +138,7 @@ function ClassesTab({ schoolId }: { schoolId: string }) {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this class?")) return;
     const { error } = await supabase.from("classes").delete().eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Deleted"); fetch(); }
+    if (error) toast.error(getUserFriendlyError(error)); else { toast.success("Deleted"); fetch(); }
   };
 
   return (
@@ -192,7 +193,7 @@ function SectionsTab({ schoolId }: { schoolId: string }) {
       supabase.from("sections").select("*, classes(name)").eq("school_id", schoolId).order("name"),
       supabase.from("classes").select("id, name").eq("school_id", schoolId).order("name"),
     ]);
-    if (sectionsRes.error) toast.error(sectionsRes.error.message);
+    if (sectionsRes.error) toast.error(getUserFriendlyError(sectionsRes.error));
     else setItems(sectionsRes.data ?? []);
     setClasses(classesRes.data ?? []);
     setLoading(false);
@@ -205,11 +206,11 @@ function SectionsTab({ schoolId }: { schoolId: string }) {
     const payload = { name: form.name, class_id: form.class_id, school_id: schoolId };
     if (editId) {
       const { error } = await supabase.from("sections").update(payload).eq("id", editId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Updated");
     } else {
       const { error } = await supabase.from("sections").insert(payload);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Created");
     }
     setDialogOpen(false); setEditId(null); setForm({ name: "", class_id: "" }); fetch();
@@ -218,7 +219,7 @@ function SectionsTab({ schoolId }: { schoolId: string }) {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this section?")) return;
     const { error } = await supabase.from("sections").delete().eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Deleted"); fetch(); }
+    if (error) toast.error(getUserFriendlyError(error)); else { toast.success("Deleted"); fetch(); }
   };
 
   return (
@@ -275,7 +276,7 @@ function SubjectsTab({ schoolId }: { schoolId: string }) {
   const fetch = async () => {
     setLoading(true);
     const { data, error } = await supabase.from("subjects").select("*").eq("school_id", schoolId).order("name");
-    if (error) toast.error(error.message); else setItems(data ?? []);
+    if (error) toast.error(getUserFriendlyError(error)); else setItems(data ?? []);
     setLoading(false);
   };
 
@@ -286,11 +287,11 @@ function SubjectsTab({ schoolId }: { schoolId: string }) {
     const payload = { name: form.name, code: form.code || null, description: form.description || null, school_id: schoolId };
     if (editId) {
       const { error } = await supabase.from("subjects").update(payload).eq("id", editId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Updated");
     } else {
       const { error } = await supabase.from("subjects").insert(payload);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Created");
     }
     setDialogOpen(false); setEditId(null); setForm({ name: "", code: "", description: "" }); fetch();
@@ -299,7 +300,7 @@ function SubjectsTab({ schoolId }: { schoolId: string }) {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this subject?")) return;
     const { error } = await supabase.from("subjects").delete().eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Deleted"); fetch(); }
+    if (error) toast.error(getUserFriendlyError(error)); else { toast.success("Deleted"); fetch(); }
   };
 
   return (
@@ -341,31 +342,29 @@ function SubjectsTab({ schoolId }: { schoolId: string }) {
   );
 }
 
-// ===== Main Page =====
 export default function AcademicStructure() {
   const { schoolId } = useAuth();
-
-  if (!schoolId) return <div className="text-center py-12 text-muted-foreground">No school assigned to your account.</div>;
+  if (!schoolId) return <div className="text-center py-12 text-muted-foreground">No school assigned.</div>;
 
   return (
     <div className="space-y-4 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold">Academic Structure</h1>
-        <p className="text-sm text-muted-foreground">Manage classes, sections, subjects & academic years</p>
+        <p className="text-sm text-muted-foreground">Manage academic years, classes, sections, and subjects</p>
       </div>
       <Card className="shadow-card">
         <CardContent className="p-4">
-          <Tabs defaultValue="classes">
-            <TabsList className="grid grid-cols-4 w-full max-w-md">
-              <TabsTrigger value="classes"><Layers className="w-4 h-4 mr-1 hidden sm:inline" />Classes</TabsTrigger>
-              <TabsTrigger value="sections"><Grid3X3 className="w-4 h-4 mr-1 hidden sm:inline" />Sections</TabsTrigger>
-              <TabsTrigger value="subjects"><BookOpen className="w-4 h-4 mr-1 hidden sm:inline" />Subjects</TabsTrigger>
+          <Tabs defaultValue="years">
+            <TabsList className="grid grid-cols-4 w-full max-w-lg">
               <TabsTrigger value="years"><Calendar className="w-4 h-4 mr-1 hidden sm:inline" />Years</TabsTrigger>
+              <TabsTrigger value="classes"><Grid3X3 className="w-4 h-4 mr-1 hidden sm:inline" />Classes</TabsTrigger>
+              <TabsTrigger value="sections"><Layers className="w-4 h-4 mr-1 hidden sm:inline" />Sections</TabsTrigger>
+              <TabsTrigger value="subjects"><BookOpen className="w-4 h-4 mr-1 hidden sm:inline" />Subjects</TabsTrigger>
             </TabsList>
+            <TabsContent value="years"><AcademicYearsTab schoolId={schoolId} /></TabsContent>
             <TabsContent value="classes"><ClassesTab schoolId={schoolId} /></TabsContent>
             <TabsContent value="sections"><SectionsTab schoolId={schoolId} /></TabsContent>
             <TabsContent value="subjects"><SubjectsTab schoolId={schoolId} /></TabsContent>
-            <TabsContent value="years"><AcademicYearsTab schoolId={schoolId} /></TabsContent>
           </Tabs>
         </CardContent>
       </Card>

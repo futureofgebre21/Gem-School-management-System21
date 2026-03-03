@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,18 +88,25 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
 
   const handleSave = async () => {
     setSaving(true);
-    const records = students.filter(s => scores[s.id] !== undefined && scores[s.id] !== "").map(s => {
-      const rawScore = parseFloat(scores[s.id]);
-      const pct = toPercentage(rawScore, maxScore);
-      return {
-        student_id: s.id, subject_id: subjectFilter, class_id: classFilter,
-        academic_year_id: yearFilter, school_id: schoolId, term,
-        score: rawScore, grade: getGradeFromPercentage(pct), recorded_by: user?.id,
-      };
-    });
-    const { error } = await supabase.from("grades").upsert(records, { onConflict: "student_id,subject_id,academic_year_id,term" });
-    if (error) toast.error(error.message);
-    else toast.success("Grades saved");
+    try {
+      const records = students.filter(s => scores[s.id] !== undefined && scores[s.id] !== "").map(s => {
+        const rawScore = parseFloat(scores[s.id]);
+        if (isNaN(rawScore) || rawScore < 0 || rawScore > maxScore) {
+          throw new Error(`Invalid score for ${s.first_name} ${s.last_name}: must be 0-${maxScore}`);
+        }
+        const pct = toPercentage(rawScore, maxScore);
+        return {
+          student_id: s.id, subject_id: subjectFilter, class_id: classFilter,
+          academic_year_id: yearFilter, school_id: schoolId, term,
+          score: rawScore, grade: getGradeFromPercentage(pct), recorded_by: user?.id,
+        };
+      });
+      const { error } = await supabase.from("grades").upsert(records, { onConflict: "student_id,subject_id,academic_year_id,term" });
+      if (error) toast.error(getUserFriendlyError(error));
+      else toast.success("Grades saved");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
     setSaving(false);
   };
 
@@ -234,7 +242,7 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
       .select("student_id, score, grade, subject_id, subjects(name), students(first_name, last_name, student_id_number)")
       .eq("class_id", classFilter).eq("academic_year_id", yearFilter).eq("term", term).eq("school_id", schoolId);
 
-    if (error) { toast.error(error.message); setLoading(false); return; }
+    if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return; }
 
     const byStudent: Record<string, { name: string; id_number: string; subjects: { name: string; score: number; grade: string }[]; avg: number }> = {};
     (data ?? []).forEach((g: any) => {
