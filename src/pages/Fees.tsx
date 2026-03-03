@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,11 +51,11 @@ function FeeStructureTab({ schoolId }: { schoolId: string }) {
     };
     if (editId) {
       const { error } = await supabase.from("fee_structures").update(payload).eq("id", editId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Updated");
     } else {
       const { error } = await supabase.from("fee_structures").insert(payload);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Created");
     }
     setDialogOpen(false);
@@ -66,7 +67,7 @@ function FeeStructureTab({ schoolId }: { schoolId: string }) {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this fee structure?")) return;
     const { error } = await supabase.from("fee_structures").delete().eq("id", id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(getUserFriendlyError(error));
     else { toast.success("Deleted"); fetchData(); }
   };
 
@@ -187,7 +188,7 @@ function PaymentsTab({ schoolId }: { schoolId: string }) {
       school_id: schoolId,
       recorded_by: user?.id,
     });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(getUserFriendlyError(error)); return; }
     toast.success("Payment recorded");
     setDialogOpen(false);
     setForm({ student_id: "", fee_structure_id: "", amount_paid: "", status: "paid", payment_method: "cash", payment_date: new Date().toISOString().split("T")[0], remarks: "" });

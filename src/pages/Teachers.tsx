@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -42,7 +43,7 @@ export default function Teachers() {
     let query = supabase.from("teachers").select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
     if (search) query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
     const { data, error } = await query;
-    if (error) toast.error(error.message);
+    if (error) toast.error(getUserFriendlyError(error));
     else setTeachers(data ?? []);
     setLoading(false);
   };
@@ -65,11 +66,11 @@ export default function Teachers() {
 
     if (editId) {
       const { error } = await supabase.from("teachers").update(payload).eq("id", editId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Teacher updated");
     } else {
       const { error } = await supabase.from("teachers").insert(payload);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Teacher registered");
     }
     setDialogOpen(false);
@@ -91,7 +92,7 @@ export default function Teachers() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this teacher?")) return;
     const { error } = await supabase.from("teachers").delete().eq("id", id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(getUserFriendlyError(error));
     else { toast.success("Teacher deleted"); fetchTeachers(); }
   };
 

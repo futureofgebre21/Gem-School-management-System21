@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +26,7 @@ export default function Announcements() {
     setLoading(true);
     const { data, error } = await supabase.from("announcements")
       .select("*").eq("school_id", schoolId).order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
+    if (error) toast.error(getUserFriendlyError(error));
     else setItems(data ?? []);
     setLoading(false);
   };
@@ -38,11 +39,11 @@ export default function Announcements() {
     const payload = { ...form, school_id: schoolId, created_by: user?.id };
     if (editId) {
       const { error } = await supabase.from("announcements").update(payload).eq("id", editId);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Updated");
     } else {
       const { error } = await supabase.from("announcements").insert(payload);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Published");
     }
     setDialogOpen(false); setEditId(null); setForm({ title: "", content: "", target_audience: "all" }); fetch();
@@ -51,7 +52,7 @@ export default function Announcements() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this announcement?")) return;
     const { error } = await supabase.from("announcements").delete().eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Deleted"); fetch(); }
+    if (error) toast.error(getUserFriendlyError(error)); else { toast.success("Deleted"); fetch(); }
   };
 
   if (!schoolId) return <div className="text-center py-12 text-muted-foreground">No school assigned.</div>;

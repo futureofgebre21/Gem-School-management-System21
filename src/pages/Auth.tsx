@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +27,6 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
-        // Check if user has completed onboarding
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: roles } = await supabase.from("user_roles")
@@ -50,7 +50,7 @@ export default function Auth() {
         toast.success("Account created! Check your email to verify.");
       }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     } finally {
       setLoading(false);
     }

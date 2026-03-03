@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,17 +31,12 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
   const fetchStudents = async () => {
     if (!classFilter) return;
     setLoading(true);
-    // Get students assigned to this class via student_classes, or fallback to students.class
     const { data: studentData } = await supabase.from("students")
       .select("id, first_name, last_name, student_id_number")
       .eq("school_id", schoolId)
       .eq("status", "active")
       .order("first_name");
 
-    // Get class name for fallback matching
-    const selectedClass = classes.find(c => c.id === classFilter);
-
-    // Get student_classes assignments
     const { data: assignments } = await supabase.from("student_classes")
       .select("student_id")
       .eq("class_id", classFilter)
@@ -48,19 +44,12 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
 
     const assignedIds = new Set((assignments ?? []).map(a => a.student_id));
 
-    // Filter: either assigned via student_classes OR matching class name in students.class
-    const filtered = (studentData ?? []).filter(s =>
-      assignedIds.has(s.id) || (selectedClass && s.student_id_number)
-    );
-
-    // If we have assignments, use those; otherwise show all students as fallback
     const finalStudents = assignedIds.size > 0
       ? (studentData ?? []).filter(s => assignedIds.has(s.id))
       : studentData ?? [];
 
     setStudents(finalStudents);
 
-    // Fetch existing attendance for this date
     const { data: existing } = await supabase.from("student_attendance")
       .select("student_id, status")
       .eq("school_id", schoolId)
@@ -69,7 +58,6 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
 
     const att: Record<string, string> = {};
     (existing ?? []).forEach(a => { att[a.student_id] = a.status; });
-    // Default all to present
     finalStudents.forEach(s => { if (!att[s.id]) att[s.id] = "present"; });
     setAttendance(att);
     setLoading(false);
@@ -88,9 +76,8 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
       recorded_by: user?.id,
     }));
 
-    // Upsert based on unique(student_id, date)
     const { error } = await supabase.from("student_attendance").upsert(records, { onConflict: "student_id,date" });
-    if (error) toast.error(error.message);
+    if (error) toast.error(getUserFriendlyError(error));
     else toast.success(`Attendance saved for ${records.length} students`);
     setSaving(false);
   };
@@ -201,7 +188,7 @@ function TeacherAttendanceTab({ schoolId }: { schoolId: string }) {
       teacher_id, school_id: schoolId, date, status, recorded_by: user?.id,
     }));
     const { error } = await supabase.from("teacher_attendance").upsert(records, { onConflict: "teacher_id,date" });
-    if (error) toast.error(error.message);
+    if (error) toast.error(getUserFriendlyError(error));
     else toast.success(`Teacher attendance saved`);
     setSaving(false);
   };
@@ -271,9 +258,8 @@ function AttendanceReportsTab({ schoolId }: { schoolId: string }) {
       .lte("date", endDate)
       .order("date");
 
-    if (error) { toast.error(error.message); setLoading(false); return; }
+    if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return; }
 
-    // Aggregate by student
     const byStudent: Record<string, { name: string; id_number: string; present: number; absent: number; late: number; total: number }> = {};
     (data ?? []).forEach((r: any) => {
       const key = r.student_id;
