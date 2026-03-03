@@ -17,6 +17,7 @@ import Grades from "./pages/Grades";
 import Fees from "./pages/Fees";
 import ParentPortal from "./pages/ParentPortal";
 import Announcements from "./pages/Announcements";
+import DataImport from "./pages/DataImport";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -33,9 +34,18 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, loading, userRole, schoolId } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   if (!user) return <Navigate to="/auth" replace />;
-  // If user has no role or school assigned, redirect to onboarding
+  // Only redirect to onboarding if user has NO role AND NO school
   if (!userRole && !schoolId) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
+}
+
+function OnboardingPage() {
+  const { user, loading, userRole, schoolId } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  // If user already has a role and school, skip onboarding
+  if (userRole && schoolId) return <Navigate to="/dashboard" replace />;
+  return <Onboarding />;
 }
 
 const App = () => (
@@ -48,7 +58,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/dashboard" element={<OnboardingGuard><DashboardLayout /></OnboardingGuard>}>
               <Route index element={<Dashboard />} />
               <Route path="students" element={<Students />} />
@@ -60,6 +70,7 @@ const App = () => (
               <Route path="fees" element={<Fees />} />
               <Route path="parent" element={<ParentPortal />} />
               <Route path="announcements" element={<Announcements />} />
+              <Route path="import" element={<DataImport />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
