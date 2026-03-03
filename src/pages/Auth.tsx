@@ -27,14 +27,16 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
+
+        // Check if user already has role & school
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: roles } = await supabase.from("user_roles")
-            .select("role").eq("user_id", user.id).limit(1);
-          if (!roles || roles.length === 0) {
-            navigate("/onboarding");
-          } else {
+            .select("role, school_id").eq("user_id", user.id).limit(1);
+          if (roles && roles.length > 0 && roles[0].school_id) {
             navigate("/dashboard");
+          } else {
+            navigate("/onboarding");
           }
         }
       } else {

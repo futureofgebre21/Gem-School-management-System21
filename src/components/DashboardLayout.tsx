@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import {
   GraduationCap, LayoutDashboard, Users, UserCog,
   School, Menu, X, LogOut, ChevronDown, Layers,
-  Calendar, FileText, Megaphone, Home, DollarSign,
+  Calendar, FileText, Megaphone, Home, DollarSign, FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +23,7 @@ const navItems = [
   { to: "/dashboard/fees", icon: DollarSign, label: "Fees" },
   { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements" },
   { to: "/dashboard/parent", icon: Home, label: "Parent Portal" },
+  { to: "/dashboard/import", icon: FileUp, label: "Import Data" },
 ];
 
 export default function DashboardLayout() {
