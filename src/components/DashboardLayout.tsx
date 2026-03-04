@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import {
-  GraduationCap, LayoutDashboard, Users, UserCog,
+  LayoutDashboard, Users, UserCog,
   School, Menu, X, LogOut, ChevronDown, Layers,
   Calendar, FileText, Megaphone, Home, DollarSign, FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import logo from "@/assets/logo.png";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -57,9 +58,7 @@ export default function DashboardLayout() {
         }`}
       >
         <div className="flex items-center gap-3 p-5 border-b border-sidebar-border">
-          <div className="w-9 h-9 rounded-lg gradient-accent flex items-center justify-center">
-            <GraduationCap className="w-5 h-5 text-accent-foreground" />
-          </div>
+          <img src={logo} alt="Gem School Logo" className="w-9 h-9 rounded-lg object-cover" />
           <div>
             <h2 className="font-bold text-sm text-sidebar-foreground">Gem School</h2>
             <p className="text-xs text-sidebar-foreground/60">Management</p>
