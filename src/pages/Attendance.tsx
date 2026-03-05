@@ -329,8 +329,10 @@ function AttendanceReportsTab({ schoolId }: { schoolId: string }) {
 }
 
 export default function Attendance() {
-  const { schoolId } = useAuth();
+  const { schoolId, userRole } = useAuth();
   if (!schoolId) return <div className="text-center py-12 text-muted-foreground">No school assigned.</div>;
+
+  const isAdmin = userRole === "super_admin" || userRole === "school_admin";
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -341,13 +343,17 @@ export default function Attendance() {
       <Card className="shadow-card">
         <CardContent className="p-4">
           <Tabs defaultValue="students">
-            <TabsList className="grid grid-cols-3 w-full max-w-md">
+            <TabsList className={`grid ${isAdmin ? "grid-cols-3" : "grid-cols-2"} w-full max-w-md`}>
               <TabsTrigger value="students"><Users className="w-4 h-4 mr-1 hidden sm:inline" />Students</TabsTrigger>
-              <TabsTrigger value="teachers"><UserCog className="w-4 h-4 mr-1 hidden sm:inline" />Teachers</TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="teachers"><UserCog className="w-4 h-4 mr-1 hidden sm:inline" />Teachers</TabsTrigger>
+              )}
               <TabsTrigger value="reports"><Download className="w-4 h-4 mr-1 hidden sm:inline" />Reports</TabsTrigger>
             </TabsList>
             <TabsContent value="students"><StudentAttendanceTab schoolId={schoolId} /></TabsContent>
-            <TabsContent value="teachers"><TeacherAttendanceTab schoolId={schoolId} /></TabsContent>
+            {isAdmin && (
+              <TabsContent value="teachers"><TeacherAttendanceTab schoolId={schoolId} /></TabsContent>
+            )}
             <TabsContent value="reports"><AttendanceReportsTab schoolId={schoolId} /></TabsContent>
           </Tabs>
         </CardContent>

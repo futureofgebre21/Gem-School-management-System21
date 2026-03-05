@@ -68,10 +68,25 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const fetchStudents = async () => {
     if (!classFilter || !subjectFilter || !yearFilter) return;
     setLoading(true);
-    const { data } = await supabase.from("students")
-      .select("id, first_name, last_name, student_id_number")
-      .eq("school_id", schoolId).eq("status", "active").order("first_name");
-    setStudents(data ?? []);
+
+    // Get students assigned to the selected class
+    const { data: assignments } = await supabase.from("student_classes")
+      .select("student_id")
+      .eq("class_id", classFilter)
+      .eq("school_id", schoolId);
+
+    const assignedIds = (assignments ?? []).map(a => a.student_id);
+
+    let studentData: any[] = [];
+    if (assignedIds.length > 0) {
+      const { data } = await supabase.from("students")
+        .select("id, first_name, last_name, student_id_number")
+        .eq("school_id", schoolId).eq("status", "active")
+        .in("id", assignedIds)
+        .order("first_name");
+      studentData = data ?? [];
+    }
+    setStudents(studentData);
 
     const { data: existing } = await supabase.from("grades")
       .select("student_id, score")

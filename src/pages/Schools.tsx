@@ -79,8 +79,10 @@ export default function Schools() {
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Schools</h1>
-          <p className="text-sm text-muted-foreground">{schools.length} registered schools</p>
+          <h1 className="text-2xl font-bold">{userRole === "school_admin" ? "My School" : "Schools"}</h1>
+          {userRole === "super_admin" && (
+            <p className="text-sm text-muted-foreground">{schools.length} registered schools</p>
+          )}
         </div>
         {(canCreate || editId) && (
           <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) { setEditId(null); setForm(emptyForm); } }}>
