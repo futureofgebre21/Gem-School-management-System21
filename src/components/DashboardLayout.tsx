@@ -45,9 +45,12 @@ export default function DashboardLayout() {
       return ["/dashboard", "/dashboard/grades", "/dashboard/attendance"].includes(item.to);
     }
     if (userRole === "teacher") {
-      return item.to !== "/dashboard/schools" && item.to !== "/dashboard/fees" && item.to !== "/dashboard/parent";
+      return item.to !== "/dashboard/fees" && item.to !== "/dashboard/parent";
     }
-    return true; // admin & super_admin see everything
+    if (userRole === "school_admin") {
+      return item.to !== "/dashboard/parent";
+    }
+    return true; // super_admin sees everything
   });
 
   return (

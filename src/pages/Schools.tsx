@@ -34,13 +34,18 @@ export default function Schools() {
 
   const fetchSchools = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("schools").select("*").order("name");
+    let query = supabase.from("schools").select("*").order("name");
+    // School admins only see their own school
+    if (userRole === "school_admin" && schoolId) {
+      query = query.eq("id", schoolId);
+    }
+    const { data, error } = await query;
     if (error) toast.error(error.message);
     else setSchools((data ?? []) as any);
     setLoading(false);
   };
 
-  useEffect(() => { fetchSchools(); }, []);
+  useEffect(() => { fetchSchools(); }, [userRole, schoolId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +72,8 @@ export default function Schools() {
   };
 
   const canManage = userRole === "super_admin" || userRole === "school_admin";
+  const canCreate = userRole === "super_admin"; // Only super admin can create new schools
+  const canDelete = userRole === "super_admin"; // Only super admin can delete schools
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -75,11 +82,13 @@ export default function Schools() {
           <h1 className="text-2xl font-bold">Schools</h1>
           <p className="text-sm text-muted-foreground">{schools.length} registered schools</p>
         </div>
-        {canManage && (
+        {(canCreate || editId) && (
           <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) { setEditId(null); setForm(emptyForm); } }}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add School</Button>
-            </DialogTrigger>
+            {canCreate && (
+              <DialogTrigger asChild>
+                <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add School</Button>
+              </DialogTrigger>
+            )}
             <DialogContent>
               <DialogHeader><DialogTitle>{editId ? "Edit" : "Create"} School</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-3">
@@ -138,7 +147,7 @@ export default function Schools() {
                         setForm({ name: s.name, address: s.address ?? "", city: s.city ?? "", country: s.country ?? "Nigeria", phone: s.phone ?? "", email: s.email ?? "", type: s.type ?? "private" });
                         setDialogOpen(true);
                       }}><Edit className="w-4 h-4" /></Button>
-                      {userRole === "super_admin" && (
+                      {canDelete && (
                         <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                       )}
                     </div>
