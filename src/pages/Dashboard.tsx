@@ -40,22 +40,29 @@ export default function Dashboard() {
         teacherQuery = teacherQuery.eq("school_id", schoolId);
       }
 
-      const [studentsRes, teachers, schools] = await Promise.all([
-        studentQuery,
-        teacherQuery,
-        supabase.from("schools").select("id, name, type", { count: "exact" }),
+      const studentPromise = studentQuery;
+      const teacherPromise = teacherQuery;
+      const schoolPromise = isSuperAdmin
+        ? supabase.from("schools").select("id, name, type", { count: "exact" })
+        : null;
+
+      const [studentsRes, teachers, schoolsRes] = await Promise.all([
+        studentPromise,
+        teacherPromise,
+        schoolPromise,
       ]);
+      const schools = schoolsRes;
 
       const studentData = studentsRes.data ?? [];
       setStats({
         students: studentsRes.count ?? studentData.length,
         teachers: teachers.count ?? 0,
-        schools: schools.count ?? 0,
+        schools: schools?.count ?? 0,
         maleStudents: studentData.filter(s => s.gender === "male").length,
         femaleStudents: studentData.filter(s => s.gender === "female").length,
       });
 
-      if (isSuperAdmin && schools.data) {
+      if (isSuperAdmin && schools?.data) {
         const schoolCounts: { name: string; type: string; studentCount: number }[] = [];
         for (const sch of schools.data) {
           const { count } = await supabase.from("students").select("id", { count: "exact", head: true }).eq("school_id", sch.id);
@@ -109,7 +116,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className={`grid grid-cols-2 sm:grid-cols-3 ${userRole === "super_admin" ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4`}>
         <Card className="shadow-card hover:shadow-card-hover transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground">Total Students</CardTitle>
@@ -138,13 +145,15 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent><div className="text-2xl font-bold text-foreground">{stats.teachers}</div></CardContent>
         </Card>
-        <Card className="shadow-card hover:shadow-card-hover transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Schools</CardTitle>
-            <School className="w-4 h-4 text-info" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-foreground">{stats.schools}</div></CardContent>
-        </Card>
+        {userRole === "super_admin" && (
+          <Card className="shadow-card hover:shadow-card-hover transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Schools</CardTitle>
+              <School className="w-4 h-4 text-info" />
+            </CardHeader>
+            <CardContent><div className="text-2xl font-bold text-foreground">{stats.schools}</div></CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Quick Actions */}

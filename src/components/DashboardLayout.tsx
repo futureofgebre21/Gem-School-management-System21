@@ -14,17 +14,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/dashboard/students", icon: Users, label: "Students" },
-  { to: "/dashboard/teachers", icon: UserCog, label: "Teachers" },
-  { to: "/dashboard/schools", icon: School, label: "Schools" },
-  { to: "/dashboard/academics", icon: Layers, label: "Academics" },
-  { to: "/dashboard/attendance", icon: Calendar, label: "Attendance" },
-  { to: "/dashboard/grades", icon: FileText, label: "Grades" },
-  { to: "/dashboard/fees", icon: DollarSign, label: "Fees" },
-  { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements" },
-  { to: "/dashboard/parent", icon: Home, label: "Parent Portal" },
-  { to: "/dashboard/import", icon: FileUp, label: "Import Data" },
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "school_admin", "teacher", "student", "parent"] },
+  { to: "/dashboard/students", icon: Users, label: "Students", roles: ["super_admin", "school_admin"] },
+  { to: "/dashboard/teachers", icon: UserCog, label: "Teachers", roles: ["super_admin", "school_admin"] },
+  { to: "/dashboard/schools", icon: School, label: "Schools", roles: ["super_admin", "school_admin"] },
+  { to: "/dashboard/academics", icon: Layers, label: "Academics", roles: ["super_admin", "school_admin"] },
+  { to: "/dashboard/attendance", icon: Calendar, label: "Attendance", roles: ["super_admin", "school_admin", "teacher"] },
+  { to: "/dashboard/grades", icon: FileText, label: "Grades", roles: ["super_admin", "school_admin", "teacher"] },
+  { to: "/dashboard/fees", icon: DollarSign, label: "Fees", roles: ["super_admin", "school_admin"] },
+  { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements", roles: ["super_admin", "school_admin"] },
+  { to: "/dashboard/parent", icon: Home, label: "Parent Portal", roles: ["parent"] },
+  { to: "/dashboard/import", icon: FileUp, label: "Import Data", roles: ["super_admin", "school_admin"] },
 ];
 
 export default function DashboardLayout() {
@@ -38,19 +38,8 @@ export default function DashboardLayout() {
 
   // Filter nav items based on role
   const filteredNav = navItems.filter(item => {
-    if (userRole === "parent") {
-      return ["/dashboard", "/dashboard/parent"].includes(item.to);
-    }
-    if (userRole === "student") {
-      return ["/dashboard", "/dashboard/grades", "/dashboard/attendance"].includes(item.to);
-    }
-    if (userRole === "teacher") {
-      return item.to !== "/dashboard/fees" && item.to !== "/dashboard/parent";
-    }
-    if (userRole === "school_admin") {
-      return item.to !== "/dashboard/parent";
-    }
-    return true; // super_admin sees everything
+    if (!userRole) return item.to === "/dashboard";
+    return item.roles.includes(userRole);
   });
 
   return (
