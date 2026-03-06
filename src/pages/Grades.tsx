@@ -36,6 +36,67 @@ function toPercentage(score: number, maxScore: number): number {
   return (score / maxScore) * 100;
 }
 
+// Student read-only view of their grades
+function StudentGradesView({ schoolId }: { schoolId: string }) {
+  const { user } = useAuth();
+  const [grades, setGrades] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGrades = async () => {
+      if (!user) return;
+      // Find student records linked to this user's school
+      const { data: students } = await supabase.from("students")
+        .select("id")
+        .eq("school_id", schoolId)
+        .eq("status", "active");
+
+      const studentIds = (students ?? []).map(s => s.id);
+      if (studentIds.length === 0) { setLoading(false); return; }
+
+      const { data } = await supabase.from("grades")
+        .select("score, grade, term, subjects(name), academic_years(name), classes(name)")
+        .eq("school_id", schoolId)
+        .in("student_id", studentIds)
+        .order("created_at", { ascending: false });
+
+      setGrades(data ?? []);
+      setLoading(false);
+    };
+    fetchGrades();
+  }, [schoolId, user]);
+
+  if (loading) return <p className="text-center py-8 text-muted-foreground">Loading your results...</p>;
+  if (grades.length === 0) return <p className="text-center py-8 text-muted-foreground">No grades recorded yet.</p>;
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Subject</TableHead>
+          <TableHead>Class</TableHead>
+          <TableHead>Year</TableHead>
+          <TableHead>Term</TableHead>
+          <TableHead>Score</TableHead>
+          <TableHead>Grade</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {grades.map((g, i) => (
+          <TableRow key={i}>
+            <TableCell className="font-medium">{(g as any).subjects?.name ?? "-"}</TableCell>
+            <TableCell>{(g as any).classes?.name ?? "-"}</TableCell>
+            <TableCell>{(g as any).academic_years?.name ?? "-"}</TableCell>
+            <TableCell>{g.term}</TableCell>
+            <TableCell>{g.score}</TableCell>
+            <TableCell><Badge variant={g.grade && g.grade <= "C" ? "default" : "destructive"}>{g.grade}</Badge></TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const { user } = useAuth();
   const [classFilter, setClassFilter] = useState("");
@@ -69,7 +130,6 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
     if (!classFilter || !subjectFilter || !yearFilter) return;
     setLoading(true);
 
-    // Get students assigned to the selected class
     const { data: assignments } = await supabase.from("student_classes")
       .select("student_id")
       .eq("class_id", classFilter)
@@ -355,25 +415,33 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
 }
 
 export default function Grades() {
-  const { schoolId } = useAuth();
+  const { schoolId, userRole } = useAuth();
   if (!schoolId) return <div className="text-center py-12 text-muted-foreground">No school assigned.</div>;
+
+  const isStudent = userRole === "student";
 
   return (
     <div className="space-y-4 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold">Grades & Report Cards</h1>
-        <p className="text-sm text-muted-foreground">Enter grades, generate report cards, and track performance</p>
+        <h1 className="text-2xl font-bold">{isStudent ? "My Results" : "Grades & Report Cards"}</h1>
+        <p className="text-sm text-muted-foreground">
+          {isStudent ? "View your academic results and grades" : "Enter grades, generate report cards, and track performance"}
+        </p>
       </div>
       <Card className="shadow-card">
         <CardContent className="p-4">
-          <Tabs defaultValue="enter">
-            <TabsList className="grid grid-cols-2 w-full max-w-sm">
-              <TabsTrigger value="enter"><FileText className="w-4 h-4 mr-1 hidden sm:inline" />Enter Grades</TabsTrigger>
-              <TabsTrigger value="reports"><BarChart3 className="w-4 h-4 mr-1 hidden sm:inline" />Report Cards</TabsTrigger>
-            </TabsList>
-            <TabsContent value="enter"><EnterGradesTab schoolId={schoolId} /></TabsContent>
-            <TabsContent value="reports"><ReportCardsTab schoolId={schoolId} /></TabsContent>
-          </Tabs>
+          {isStudent ? (
+            <StudentGradesView schoolId={schoolId} />
+          ) : (
+            <Tabs defaultValue="enter">
+              <TabsList className="grid grid-cols-2 w-full max-w-sm">
+                <TabsTrigger value="enter"><FileText className="w-4 h-4 mr-1 hidden sm:inline" />Enter Grades</TabsTrigger>
+                <TabsTrigger value="reports"><BarChart3 className="w-4 h-4 mr-1 hidden sm:inline" />Report Cards</TabsTrigger>
+              </TabsList>
+              <TabsContent value="enter"><EnterGradesTab schoolId={schoolId} /></TabsContent>
+              <TabsContent value="reports"><ReportCardsTab schoolId={schoolId} /></TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
     </div>
