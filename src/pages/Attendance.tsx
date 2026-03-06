@@ -13,6 +13,77 @@ import { toast } from "sonner";
 import { Users, UserCog, Save, Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
+// Student read-only view
+function StudentAttendanceView({ schoolId }: { schoolId: string }) {
+  const { user } = useAuth();
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      if (!user) return;
+      const { data: students } = await supabase.from("students")
+        .select("id").eq("school_id", schoolId).eq("status", "active");
+      const studentIds = (students ?? []).map(s => s.id);
+      if (studentIds.length === 0) { setLoading(false); return; }
+
+      const { data } = await supabase.from("student_attendance")
+        .select("date, status, classes(name)")
+        .eq("school_id", schoolId)
+        .in("student_id", studentIds)
+        .order("date", { ascending: false })
+        .limit(50);
+      setRecords(data ?? []);
+      setLoading(false);
+    };
+    fetch();
+  }, [schoolId, user]);
+
+  if (loading) return <p className="text-center py-8 text-muted-foreground">Loading your attendance...</p>;
+
+  const stats = {
+    present: records.filter(r => r.status === "present").length,
+    absent: records.filter(r => r.status === "absent").length,
+    late: records.filter(r => r.status === "late").length,
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-3">
+        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Present: {stats.present}</Badge>
+        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Absent: {stats.absent}</Badge>
+        <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Late: {stats.late}</Badge>
+      </div>
+      {records.length === 0 ? (
+        <p className="text-center py-8 text-muted-foreground">No attendance records found.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Class</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {records.map((r, i) => (
+              <TableRow key={i}>
+                <TableCell>{r.date}</TableCell>
+                <TableCell>{(r as any).classes?.name ?? "-"}</TableCell>
+                <TableCell>
+                  <Badge variant={r.status === "present" ? "default" : r.status === "absent" ? "destructive" : "secondary"}>
+                    {r.status === "present" ? "✅" : r.status === "absent" ? "❌" : "⏰"} {r.status}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
+
 function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
   const { user } = useAuth();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -68,14 +139,8 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
   const handleSave = async () => {
     setSaving(true);
     const records = Object.entries(attendance).map(([student_id, status]) => ({
-      student_id,
-      class_id: classFilter,
-      school_id: schoolId,
-      date,
-      status,
-      recorded_by: user?.id,
+      student_id, class_id: classFilter, school_id: schoolId, date, status, recorded_by: user?.id,
     }));
-
     const { error } = await supabase.from("student_attendance").upsert(records, { onConflict: "student_id,date" });
     if (error) toast.error(getUserFriendlyError(error));
     else toast.success(`Attendance saved for ${records.length} students`);
@@ -137,9 +202,7 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
                 <TableCell className="font-medium">{s.first_name} {s.last_name}</TableCell>
                 <TableCell>
                   <Select value={attendance[s.id] ?? "present"} onValueChange={v => setAttendance({ ...attendance, [s.id]: v })}>
-                    <SelectTrigger className="w-28">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="present">✅ Present</SelectItem>
                       <SelectItem value="absent">❌ Absent</SelectItem>
@@ -332,7 +395,24 @@ export default function Attendance() {
   const { schoolId, userRole } = useAuth();
   if (!schoolId) return <div className="text-center py-12 text-muted-foreground">No school assigned.</div>;
 
+  const isStudent = userRole === "student";
   const isAdmin = userRole === "super_admin" || userRole === "school_admin";
+
+  if (isStudent) {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold">My Attendance</h1>
+          <p className="text-sm text-muted-foreground">View your attendance records</p>
+        </div>
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <StudentAttendanceView schoolId={schoolId} />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 animate-fade-in">

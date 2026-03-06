@@ -19,8 +19,8 @@ const navItems = [
   { to: "/dashboard/teachers", icon: UserCog, label: "Teachers", roles: ["super_admin", "school_admin"] },
   { to: "/dashboard/schools", icon: School, label: "Schools", roles: ["super_admin", "school_admin"] },
   { to: "/dashboard/academics", icon: Layers, label: "Academics", roles: ["super_admin", "school_admin"] },
-  { to: "/dashboard/attendance", icon: Calendar, label: "Attendance", roles: ["super_admin", "school_admin", "teacher"] },
-  { to: "/dashboard/grades", icon: FileText, label: "Grades", roles: ["super_admin", "school_admin", "teacher"] },
+  { to: "/dashboard/attendance", icon: Calendar, label: "Attendance", roles: ["super_admin", "school_admin", "teacher", "student"] },
+  { to: "/dashboard/grades", icon: FileText, label: "Grades", roles: ["super_admin", "school_admin", "teacher", "student"] },
   { to: "/dashboard/fees", icon: DollarSign, label: "Fees", roles: ["super_admin", "school_admin"] },
   { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements", roles: ["super_admin", "school_admin"] },
   { to: "/dashboard/parent", icon: Home, label: "Parent Portal", roles: ["parent"] },
@@ -36,7 +36,6 @@ export default function DashboardLayout() {
     ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : user?.email?.slice(0, 2).toUpperCase() ?? "U";
 
-  // Filter nav items based on role
   const filteredNav = navItems.filter(item => {
     if (!userRole) return item.to === "/dashboard";
     return item.roles.includes(userRole);
