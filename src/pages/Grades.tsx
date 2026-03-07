@@ -36,7 +36,6 @@ function toPercentage(score: number, maxScore: number): number {
   return (score / maxScore) * 100;
 }
 
-// Student read-only view of their grades
 function StudentGradesView({ schoolId }: { schoolId: string }) {
   const { user } = useAuth();
   const [grades, setGrades] = useState<any[]>([]);
@@ -45,21 +44,14 @@ function StudentGradesView({ schoolId }: { schoolId: string }) {
   useEffect(() => {
     const fetchGrades = async () => {
       if (!user) return;
-      // Find student records linked to this user's school
       const { data: students } = await supabase.from("students")
-        .select("id")
-        .eq("school_id", schoolId)
-        .eq("status", "active");
-
+        .select("id").eq("school_id", schoolId).eq("status", "active");
       const studentIds = (students ?? []).map(s => s.id);
       if (studentIds.length === 0) { setLoading(false); return; }
-
       const { data } = await supabase.from("grades")
         .select("score, grade, term, subjects(name), academic_years(name), classes(name)")
-        .eq("school_id", schoolId)
-        .in("student_id", studentIds)
+        .eq("school_id", schoolId).in("student_id", studentIds)
         .order("created_at", { ascending: false });
-
       setGrades(data ?? []);
       setLoading(false);
     };
@@ -73,12 +65,8 @@ function StudentGradesView({ schoolId }: { schoolId: string }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Subject</TableHead>
-          <TableHead>Class</TableHead>
-          <TableHead>Year</TableHead>
-          <TableHead>Term</TableHead>
-          <TableHead>Score</TableHead>
-          <TableHead>Grade</TableHead>
+          <TableHead>Subject</TableHead><TableHead>Class</TableHead><TableHead>Year</TableHead>
+          <TableHead>Term</TableHead><TableHead>Score</TableHead><TableHead>Grade</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -100,11 +88,13 @@ function StudentGradesView({ schoolId }: { schoolId: string }) {
 function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const { user } = useAuth();
   const [classFilter, setClassFilter] = useState("");
+  const [sectionFilter, setSectionFilter] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [term, setTerm] = useState("First Term");
   const [scale, setScale] = useState("100");
   const [classes, setClasses] = useState<any[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [years, setYears] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
@@ -117,24 +107,27 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
   useEffect(() => {
     Promise.all([
       supabase.from("classes").select("id, name").eq("school_id", schoolId).order("name"),
+      supabase.from("sections").select("id, name, class_id").eq("school_id", schoolId).order("name"),
       supabase.from("subjects").select("id, name").eq("school_id", schoolId).order("name"),
       supabase.from("academic_years").select("id, name").eq("school_id", schoolId).order("start_date", { ascending: false }),
-    ]).then(([c, s, y]) => {
+    ]).then(([c, sec, s, y]) => {
       setClasses(c.data ?? []);
+      setSections(sec.data ?? []);
       setSubjects(s.data ?? []);
       setYears(y.data ?? []);
     });
   }, [schoolId]);
 
+  const filteredSections = sections.filter(s => s.class_id === classFilter);
+
   const fetchStudents = async () => {
     if (!classFilter || !subjectFilter || !yearFilter) return;
     setLoading(true);
 
-    const { data: assignments } = await supabase.from("student_classes")
-      .select("student_id")
-      .eq("class_id", classFilter)
-      .eq("school_id", schoolId);
-
+    let assignQuery = supabase.from("student_classes")
+      .select("student_id").eq("class_id", classFilter).eq("school_id", schoolId);
+    if (sectionFilter && sectionFilter !== "all") assignQuery = assignQuery.eq("section_id", sectionFilter);
+    const { data: assignments } = await assignQuery;
     const assignedIds = (assignments ?? []).map(a => a.student_id);
 
     let studentData: any[] = [];
@@ -142,8 +135,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       const { data } = await supabase.from("students")
         .select("id, first_name, last_name, student_id_number")
         .eq("school_id", schoolId).eq("status", "active")
-        .in("id", assignedIds)
-        .order("first_name");
+        .in("id", assignedIds).order("first_name");
       studentData = data ?? [];
     }
     setStudents(studentData);
@@ -152,14 +144,13 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       .select("student_id, score")
       .eq("class_id", classFilter).eq("subject_id", subjectFilter)
       .eq("academic_year_id", yearFilter).eq("term", term).eq("school_id", schoolId);
-
     const sc: Record<string, string> = {};
     (existing ?? []).forEach(g => { sc[g.student_id] = String(g.score ?? ""); });
     setScores(sc);
     setLoading(false);
   };
 
-  useEffect(() => { fetchStudents(); }, [classFilter, subjectFilter, yearFilter, term]);
+  useEffect(() => { fetchStudents(); }, [classFilter, sectionFilter, subjectFilter, yearFilter, term]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -179,31 +170,39 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       const { error } = await supabase.from("grades").upsert(records, { onConflict: "student_id,subject_id,academic_year_id,term" });
       if (error) toast.error(getUserFriendlyError(error));
       else toast.success("Grades saved");
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err: any) { toast.error(err.message); }
     setSaving(false);
   };
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div>
-          <Label>Class</Label>
-          <Select value={classFilter} onValueChange={setClassFilter}>
+          <Label>Class *</Label>
+          <Select value={classFilter} onValueChange={v => { setClassFilter(v); setSectionFilter(""); }}>
             <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
-          <Label>Subject</Label>
+          <Label>Section</Label>
+          <Select value={sectionFilter} onValueChange={setSectionFilter}>
+            <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sections</SelectItem>
+              {filteredSections.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Subject *</Label>
           <Select value={subjectFilter} onValueChange={setSubjectFilter}>
             <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>{subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
-          <Label>Academic Year</Label>
+          <Label>Academic Year *</Label>
           <Select value={yearFilter} onValueChange={setYearFilter}>
             <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>{years.map(y => <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>)}</SelectContent>
@@ -224,16 +223,14 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
           <Label>Scale</Label>
           <Select value={scale} onValueChange={setScale}>
             <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {GRADING_SCALES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-            </SelectContent>
+            <SelectContent>{GRADING_SCALES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
           </Select>
         </div>
       </div>
 
       {students.length > 0 && (
         <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">Grading: <span className="font-semibold text-foreground">Out of {maxScore}</span></p>
+          <p className="text-sm text-muted-foreground">Grading: <span className="font-semibold text-foreground">Out of {maxScore}</span> • {students.length} students</p>
           <Button onClick={handleSave} disabled={saving}><Save className="w-4 h-4 mr-1" />{saving ? "Saving..." : "Save Grades"}</Button>
         </div>
       )}
@@ -243,16 +240,13 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       ) : loading ? (
         <p className="text-center py-8 text-muted-foreground">Loading...</p>
       ) : students.length === 0 ? (
-        <p className="text-center py-8 text-muted-foreground">No students found</p>
+        <p className="text-center py-8 text-muted-foreground">No students assigned to this class{sectionFilter && sectionFilter !== "all" ? " and section" : ""}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Score (/{maxScore})</TableHead>
-              <TableHead>Percentage</TableHead>
-              <TableHead>Grade</TableHead>
+              <TableHead>ID</TableHead><TableHead>Name</TableHead>
+              <TableHead>Score (/{maxScore})</TableHead><TableHead>%</TableHead><TableHead>Grade</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -265,9 +259,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
                   <TableCell className="font-mono text-sm">{s.student_id_number}</TableCell>
                   <TableCell className="font-medium">{s.first_name} {s.last_name}</TableCell>
                   <TableCell>
-                    <Input
-                      type="number" min="0" max={maxScore} className="w-20"
-                      value={score}
+                    <Input type="number" min="0" max={maxScore} className="w-20" value={score}
                       onChange={e => {
                         const val = e.target.value;
                         if (val === "" || (parseFloat(val) >= 0 && parseFloat(val) <= maxScore)) {
@@ -276,13 +268,9 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
                       }}
                     />
                   </TableCell>
+                  <TableCell>{!isNaN(pct) ? <span className="font-medium">{pct.toFixed(1)}%</span> : "-"}</TableCell>
                   <TableCell>
-                    {!isNaN(pct) ? <span className="font-medium">{pct.toFixed(1)}%</span> : "-"}
-                  </TableCell>
-                  <TableCell>
-                    {!isNaN(pct) ? (
-                      <Badge variant={pct >= 50 ? "default" : "destructive"}>{getGradeFromPercentage(pct)}</Badge>
-                    ) : "-"}
+                    {!isNaN(pct) ? <Badge variant={pct >= 50 ? "default" : "destructive"}>{getGradeFromPercentage(pct)}</Badge> : "-"}
                   </TableCell>
                 </TableRow>
               );
@@ -296,9 +284,11 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
 
 function ReportCardsTab({ schoolId }: { schoolId: string }) {
   const [classFilter, setClassFilter] = useState("");
+  const [sectionFilter, setSectionFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [term, setTerm] = useState("First Term");
   const [classes, setClasses] = useState<any[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
   const [years, setYears] = useState<any[]>([]);
   const [report, setReport] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -306,16 +296,30 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
   useEffect(() => {
     Promise.all([
       supabase.from("classes").select("id, name").eq("school_id", schoolId).order("name"),
+      supabase.from("sections").select("id, name, class_id").eq("school_id", schoolId).order("name"),
       supabase.from("academic_years").select("id, name").eq("school_id", schoolId).order("start_date", { ascending: false }),
-    ]).then(([c, y]) => { setClasses(c.data ?? []); setYears(y.data ?? []); });
+    ]).then(([c, sec, y]) => {
+      setClasses(c.data ?? []); setSections(sec.data ?? []); setYears(y.data ?? []);
+    });
   }, [schoolId]);
+
+  const filteredSections = sections.filter(s => s.class_id === classFilter);
 
   const generate = async () => {
     if (!classFilter || !yearFilter) { toast.error("Select class and year"); return; }
     setLoading(true);
+
+    let assignQuery = supabase.from("student_classes").select("student_id")
+      .eq("class_id", classFilter).eq("school_id", schoolId);
+    if (sectionFilter && sectionFilter !== "all") assignQuery = assignQuery.eq("section_id", sectionFilter);
+    const { data: assigns } = await assignQuery;
+    const studentIds = (assigns ?? []).map(a => a.student_id);
+    if (studentIds.length === 0) { setReport([]); setLoading(false); return; }
+
     const { data, error } = await supabase.from("grades")
       .select("student_id, score, grade, subject_id, subjects(name), students(first_name, last_name, student_id_number)")
-      .eq("class_id", classFilter).eq("academic_year_id", yearFilter).eq("term", term).eq("school_id", schoolId);
+      .eq("class_id", classFilter).eq("academic_year_id", yearFilter).eq("term", term).eq("school_id", schoolId)
+      .in("student_id", studentIds);
 
     if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return; }
 
@@ -323,19 +327,13 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
     (data ?? []).forEach((g: any) => {
       const key = g.student_id;
       if (!byStudent[key]) {
-        byStudent[key] = {
-          name: `${g.students?.first_name} ${g.students?.last_name}`,
-          id_number: g.students?.student_id_number ?? "",
-          subjects: [], avg: 0,
-        };
+        byStudent[key] = { name: `${g.students?.first_name} ${g.students?.last_name}`, id_number: g.students?.student_id_number ?? "", subjects: [], avg: 0 };
       }
       byStudent[key].subjects.push({ name: g.subjects?.name ?? "", score: g.score, grade: g.grade });
     });
-
     Object.values(byStudent).forEach(s => {
       s.avg = s.subjects.length ? s.subjects.reduce((sum, sub) => sum + sub.score, 0) / s.subjects.length : 0;
     });
-
     setReport(Object.values(byStudent).sort((a, b) => b.avg - a.avg));
     setLoading(false);
   };
@@ -345,10 +343,7 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
     const allSubjects = [...new Set(report.flatMap(r => r.subjects.map(s => s.name)))];
     const headers = ["Student ID", "Name", ...allSubjects, "Average", "Grade"];
     const rows = report.map(r => {
-      const subScores = allSubjects.map(sub => {
-        const found = r.subjects.find(s => s.name === sub);
-        return found ? found.score : "";
-      });
+      const subScores = allSubjects.map(sub => { const f = r.subjects.find(s => s.name === sub); return f ? f.score : ""; });
       return [r.id_number, r.name, ...subScores, r.avg.toFixed(1), getGradeFromPercentage(r.avg)];
     });
     const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
@@ -361,13 +356,23 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
       <div className="flex flex-col sm:flex-row gap-3 items-end">
         <div>
           <Label>Class</Label>
-          <Select value={classFilter} onValueChange={setClassFilter}>
+          <Select value={classFilter} onValueChange={v => { setClassFilter(v); setSectionFilter(""); }}>
             <SelectTrigger className="w-44"><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
-          <Label>Academic Year</Label>
+          <Label>Section</Label>
+          <Select value={sectionFilter} onValueChange={setSectionFilter}>
+            <SelectTrigger className="w-36"><SelectValue placeholder="All" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sections</SelectItem>
+              {filteredSections.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Year</Label>
           <Select value={yearFilter} onValueChange={setYearFilter}>
             <SelectTrigger className="w-44"><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>{years.map(y => <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>)}</SelectContent>
@@ -392,8 +397,8 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Rank</TableHead><TableHead>Student ID</TableHead><TableHead>Name</TableHead>
-              <TableHead>Subjects</TableHead><TableHead>Average</TableHead><TableHead>Grade</TableHead>
+              <TableHead>Rank</TableHead><TableHead>ID</TableHead><TableHead>Name</TableHead>
+              <TableHead>Subjects</TableHead><TableHead>Avg</TableHead><TableHead>Grade</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -425,7 +430,7 @@ export default function Grades() {
       <div>
         <h1 className="text-2xl font-bold">{isStudent ? "My Results" : "Grades & Report Cards"}</h1>
         <p className="text-sm text-muted-foreground">
-          {isStudent ? "View your academic results and grades" : "Enter grades, generate report cards, and track performance"}
+          {isStudent ? "View your academic results" : "Enter grades, generate report cards by class and section"}
         </p>
       </div>
       <Card className="shadow-card">

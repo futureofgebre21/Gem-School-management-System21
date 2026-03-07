@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { Users, UserCog, Save, Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
-// Student read-only view
 function StudentAttendanceView({ schoolId }: { schoolId: string }) {
   const { user } = useAuth();
   const [records, setRecords] = useState<any[]>([]);
@@ -26,13 +25,10 @@ function StudentAttendanceView({ schoolId }: { schoolId: string }) {
         .select("id").eq("school_id", schoolId).eq("status", "active");
       const studentIds = (students ?? []).map(s => s.id);
       if (studentIds.length === 0) { setLoading(false); return; }
-
       const { data } = await supabase.from("student_attendance")
         .select("date, status, classes(name)")
-        .eq("school_id", schoolId)
-        .in("student_id", studentIds)
-        .order("date", { ascending: false })
-        .limit(50);
+        .eq("school_id", schoolId).in("student_id", studentIds)
+        .order("date", { ascending: false }).limit(50);
       setRecords(data ?? []);
       setLoading(false);
     };
@@ -58,13 +54,7 @@ function StudentAttendanceView({ schoolId }: { schoolId: string }) {
         <p className="text-center py-8 text-muted-foreground">No attendance records found.</p>
       ) : (
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
+          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Class</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
           <TableBody>
             {records.map((r, i) => (
               <TableRow key={i}>
@@ -88,44 +78,49 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
   const { user } = useAuth();
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [classFilter, setClassFilter] = useState("");
+  const [sectionFilter, setSectionFilter] = useState("");
   const [students, setStudents] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<Record<string, string>>({});
   const [classes, setClasses] = useState<any[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     supabase.from("classes").select("id, name").eq("school_id", schoolId).order("name")
       .then(({ data }) => setClasses(data ?? []));
+    supabase.from("sections").select("id, name, class_id").eq("school_id", schoolId).order("name")
+      .then(({ data }) => setSections(data ?? []));
   }, [schoolId]);
+
+  const filteredSections = sections.filter(s => s.class_id === classFilter);
 
   const fetchStudents = async () => {
     if (!classFilter) return;
     setLoading(true);
+
+    let assignQuery = supabase.from("student_classes")
+      .select("student_id").eq("class_id", classFilter).eq("school_id", schoolId);
+    if (sectionFilter && sectionFilter !== "all") {
+      assignQuery = assignQuery.eq("section_id", sectionFilter);
+    }
+    const { data: assignments } = await assignQuery;
+    const assignedIds = (assignments ?? []).map(a => a.student_id);
+
+    if (assignedIds.length === 0) {
+      setStudents([]); setAttendance({}); setLoading(false); return;
+    }
+
     const { data: studentData } = await supabase.from("students")
       .select("id, first_name, last_name, student_id_number")
-      .eq("school_id", schoolId)
-      .eq("status", "active")
-      .order("first_name");
+      .eq("school_id", schoolId).eq("status", "active")
+      .in("id", assignedIds).order("first_name");
 
-    const { data: assignments } = await supabase.from("student_classes")
-      .select("student_id")
-      .eq("class_id", classFilter)
-      .eq("school_id", schoolId);
-
-    const assignedIds = new Set((assignments ?? []).map(a => a.student_id));
-
-    const finalStudents = assignedIds.size > 0
-      ? (studentData ?? []).filter(s => assignedIds.has(s.id))
-      : studentData ?? [];
-
+    const finalStudents = studentData ?? [];
     setStudents(finalStudents);
 
     const { data: existing } = await supabase.from("student_attendance")
-      .select("student_id, status")
-      .eq("school_id", schoolId)
-      .eq("class_id", classFilter)
-      .eq("date", date);
+      .select("student_id, status").eq("school_id", schoolId).eq("class_id", classFilter).eq("date", date);
 
     const att: Record<string, string> = {};
     (existing ?? []).forEach(a => { att[a.student_id] = a.status; });
@@ -134,12 +129,13 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
     setLoading(false);
   };
 
-  useEffect(() => { fetchStudents(); }, [classFilter, date]);
+  useEffect(() => { fetchStudents(); }, [classFilter, sectionFilter, date]);
 
   const handleSave = async () => {
     setSaving(true);
     const records = Object.entries(attendance).map(([student_id, status]) => ({
-      student_id, class_id: classFilter, school_id: schoolId, date, status, recorded_by: user?.id,
+      student_id, class_id: classFilter, school_id: schoolId, date, status,
+      recorded_by: user?.id, section_id: (sectionFilter && sectionFilter !== "all") ? sectionFilter : null,
     }));
     const { error } = await supabase.from("student_attendance").upsert(records, { onConflict: "student_id,date" });
     if (error) toast.error(getUserFriendlyError(error));
@@ -156,15 +152,22 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3">
+        <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-44" /></div>
         <div>
-          <Label>Date</Label>
-          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-44" />
-        </div>
-        <div>
-          <Label>Class</Label>
-          <Select value={classFilter} onValueChange={setClassFilter}>
+          <Label>Class *</Label>
+          <Select value={classFilter} onValueChange={v => { setClassFilter(v); setSectionFilter(""); }}>
             <SelectTrigger className="w-44"><SelectValue placeholder="Select class" /></SelectTrigger>
             <SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Section</Label>
+          <Select value={sectionFilter} onValueChange={setSectionFilter}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="All sections" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sections</SelectItem>
+              {filteredSections.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
         {students.length > 0 && (
@@ -187,14 +190,10 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
       ) : loading ? (
         <p className="text-center py-8 text-muted-foreground">Loading students...</p>
       ) : students.length === 0 ? (
-        <p className="text-center py-8 text-muted-foreground">No students found for this class</p>
+        <p className="text-center py-8 text-muted-foreground">No students assigned to this class{sectionFilter && sectionFilter !== "all" ? " and section" : ""}</p>
       ) : (
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead><TableHead>Name</TableHead><TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
+          <TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Name</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
           <TableBody>
             {students.map(s => (
               <TableRow key={s.id}>
@@ -232,10 +231,8 @@ function TeacherAttendanceTab({ schoolId }: { schoolId: string }) {
     const { data: teacherData } = await supabase.from("teachers")
       .select("id, first_name, last_name").eq("school_id", schoolId).eq("status", "active").order("first_name");
     setTeachers(teacherData ?? []);
-
     const { data: existing } = await supabase.from("teacher_attendance")
       .select("teacher_id, status").eq("school_id", schoolId).eq("date", date);
-
     const att: Record<string, string> = {};
     (existing ?? []).forEach(a => { att[a.teacher_id] = a.status; });
     (teacherData ?? []).forEach(t => { if (!att[t.id]) att[t.id] = "present"; });
@@ -259,13 +256,8 @@ function TeacherAttendanceTab({ schoolId }: { schoolId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex gap-3 items-end">
-        <div>
-          <Label>Date</Label>
-          <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-44" />
-        </div>
-        {teachers.length > 0 && (
-          <Button onClick={handleSave} disabled={saving}><Save className="w-4 h-4 mr-1" />{saving ? "Saving..." : "Save"}</Button>
-        )}
+        <div><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-44" /></div>
+        {teachers.length > 0 && <Button onClick={handleSave} disabled={saving}><Save className="w-4 h-4 mr-1" />{saving ? "Saving..." : "Save"}</Button>}
       </div>
       {loading ? <p className="text-center py-8 text-muted-foreground">Loading...</p> :
         teachers.length === 0 ? <p className="text-center py-8 text-muted-foreground">No teachers found</p> : (
@@ -296,30 +288,40 @@ function TeacherAttendanceTab({ schoolId }: { schoolId: string }) {
 
 function AttendanceReportsTab({ schoolId }: { schoolId: string }) {
   const [classFilter, setClassFilter] = useState("");
+  const [sectionFilter, setSectionFilter] = useState("");
   const [classes, setClasses] = useState<any[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
   const [startDate, setStartDate] = useState(() => {
-    const d = new Date(); d.setMonth(d.getMonth() - 1);
-    return d.toISOString().split("T")[0];
+    const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().split("T")[0];
   });
   const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
   const [report, setReport] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.from("classes").select("id, name").eq("school_id", schoolId).order("name")
-      .then(({ data }) => setClasses(data ?? []));
+    supabase.from("classes").select("id, name").eq("school_id", schoolId).order("name").then(({ data }) => setClasses(data ?? []));
+    supabase.from("sections").select("id, name, class_id").eq("school_id", schoolId).order("name").then(({ data }) => setSections(data ?? []));
   }, [schoolId]);
+
+  const filteredSections = sections.filter(s => s.class_id === classFilter);
 
   const generateReport = async () => {
     if (!classFilter) { toast.error("Select a class"); return; }
     setLoading(true);
+
+    let assignQuery = supabase.from("student_classes").select("student_id")
+      .eq("class_id", classFilter).eq("school_id", schoolId);
+    if (sectionFilter && sectionFilter !== "all") assignQuery = assignQuery.eq("section_id", sectionFilter);
+    const { data: assigns } = await assignQuery;
+    const studentIds = (assigns ?? []).map(a => a.student_id);
+
+    if (studentIds.length === 0) { setReport([]); setLoading(false); return; }
+
     const { data, error } = await supabase.from("student_attendance")
       .select("student_id, status, date, students(first_name, last_name, student_id_number)")
-      .eq("school_id", schoolId)
-      .eq("class_id", classFilter)
-      .gte("date", startDate)
-      .lte("date", endDate)
-      .order("date");
+      .eq("school_id", schoolId).eq("class_id", classFilter)
+      .in("student_id", studentIds)
+      .gte("date", startDate).lte("date", endDate).order("date");
 
     if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return; }
 
@@ -332,7 +334,6 @@ function AttendanceReportsTab({ schoolId }: { schoolId: string }) {
       byStudent[key][r.status as "present" | "absent" | "late"]++;
       byStudent[key].total++;
     });
-
     setReport(Object.values(byStudent));
     setLoading(false);
   };
@@ -350,9 +351,19 @@ function AttendanceReportsTab({ schoolId }: { schoolId: string }) {
       <div className="flex flex-col sm:flex-row gap-3 items-end">
         <div>
           <Label>Class</Label>
-          <Select value={classFilter} onValueChange={setClassFilter}>
+          <Select value={classFilter} onValueChange={v => { setClassFilter(v); setSectionFilter(""); }}>
             <SelectTrigger className="w-44"><SelectValue placeholder="Select class" /></SelectTrigger>
             <SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Section</Label>
+          <Select value={sectionFilter} onValueChange={setSectionFilter}>
+            <SelectTrigger className="w-36"><SelectValue placeholder="All" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sections</SelectItem>
+              {filteredSections.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
         <div><Label>From</Label><Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-40" /></div>
@@ -406,9 +417,7 @@ export default function Attendance() {
           <p className="text-sm text-muted-foreground">View your attendance records</p>
         </div>
         <Card className="shadow-card">
-          <CardContent className="p-4">
-            <StudentAttendanceView schoolId={schoolId} />
-          </CardContent>
+          <CardContent className="p-4"><StudentAttendanceView schoolId={schoolId} /></CardContent>
         </Card>
       </div>
     );
@@ -418,22 +427,18 @@ export default function Attendance() {
     <div className="space-y-4 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold">Attendance</h1>
-        <p className="text-sm text-muted-foreground">Track daily student and teacher attendance</p>
+        <p className="text-sm text-muted-foreground">Track daily student and teacher attendance by class and section</p>
       </div>
       <Card className="shadow-card">
         <CardContent className="p-4">
           <Tabs defaultValue="students">
             <TabsList className={`grid ${isAdmin ? "grid-cols-3" : "grid-cols-2"} w-full max-w-md`}>
               <TabsTrigger value="students"><Users className="w-4 h-4 mr-1 hidden sm:inline" />Students</TabsTrigger>
-              {isAdmin && (
-                <TabsTrigger value="teachers"><UserCog className="w-4 h-4 mr-1 hidden sm:inline" />Teachers</TabsTrigger>
-              )}
+              {isAdmin && <TabsTrigger value="teachers"><UserCog className="w-4 h-4 mr-1 hidden sm:inline" />Teachers</TabsTrigger>}
               <TabsTrigger value="reports"><Download className="w-4 h-4 mr-1 hidden sm:inline" />Reports</TabsTrigger>
             </TabsList>
             <TabsContent value="students"><StudentAttendanceTab schoolId={schoolId} /></TabsContent>
-            {isAdmin && (
-              <TabsContent value="teachers"><TeacherAttendanceTab schoolId={schoolId} /></TabsContent>
-            )}
+            {isAdmin && <TabsContent value="teachers"><TeacherAttendanceTab schoolId={schoolId} /></TabsContent>}
             <TabsContent value="reports"><AttendanceReportsTab schoolId={schoolId} /></TabsContent>
           </Tabs>
         </CardContent>

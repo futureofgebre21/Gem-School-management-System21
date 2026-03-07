@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Megaphone } from "lucide-react";
+import { Plus, Edit, Trash2, Megaphone, Mail } from "lucide-react";
 
 export default function Announcements() {
   const { schoolId, user } = useAuth();
@@ -21,7 +21,7 @@ export default function Announcements() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", content: "", target_audience: "all" });
 
-  const fetch = async () => {
+  const fetchItems = async () => {
     if (!schoolId) return;
     setLoading(true);
     const { data, error } = await supabase.from("announcements")
@@ -31,7 +31,19 @@ export default function Announcements() {
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, [schoolId]);
+  useEffect(() => { fetchItems(); }, [schoolId]);
+
+  const sendEmailNotification = async (title: string, content: string, audience: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("send-announcement-email", {
+        body: { school_id: schoolId, title, content, target_audience: audience },
+      });
+      if (error) console.error("Email notification failed:", error);
+      else toast.success("Email notifications sent");
+    } catch (err) {
+      console.error("Email notification error:", err);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,14 +57,15 @@ export default function Announcements() {
       const { error } = await supabase.from("announcements").insert(payload);
       if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Published");
+      sendEmailNotification(form.title, form.content, form.target_audience);
     }
-    setDialogOpen(false); setEditId(null); setForm({ title: "", content: "", target_audience: "all" }); fetch();
+    setDialogOpen(false); setEditId(null); setForm({ title: "", content: "", target_audience: "all" }); fetchItems();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this announcement?")) return;
     const { error } = await supabase.from("announcements").delete().eq("id", id);
-    if (error) toast.error(getUserFriendlyError(error)); else { toast.success("Deleted"); fetch(); }
+    if (error) toast.error(getUserFriendlyError(error)); else { toast.success("Deleted"); fetchItems(); }
   };
 
   if (!schoolId) return <div className="text-center py-12 text-muted-foreground">No school assigned.</div>;
@@ -62,7 +75,7 @@ export default function Announcements() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Announcements</h1>
-          <p className="text-sm text-muted-foreground">Publish announcements for students, teachers, and parents</p>
+          <p className="text-sm text-muted-foreground">Publish announcements — notifications are sent automatically</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) { setEditId(null); setForm({ title: "", content: "", target_audience: "all" }); } }}>
           <DialogTrigger asChild><Button size="sm"><Plus className="w-4 h-4 mr-1" />New</Button></DialogTrigger>
@@ -82,6 +95,10 @@ export default function Announcements() {
                     <SelectItem value="parents">Parents</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Mail className="w-3.5 h-3.5" />
+                {editId ? "Editing won't resend notifications" : "In-app notifications will be sent to all school users"}
               </div>
               <Button type="submit" className="w-full">{editId ? "Update" : "Publish"}</Button>
             </form>
