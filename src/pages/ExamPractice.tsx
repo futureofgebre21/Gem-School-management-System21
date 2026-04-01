@@ -255,11 +255,11 @@ export default function ExamPractice() {
             <div className="text-5xl font-bold text-primary">{resultData.pct}%</div>
             <div className="flex justify-center gap-8 text-sm">
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+                <CheckCircle className="w-5 h-5 text-primary" />
                 <span>{resultData.correct} Correct</span>
               </div>
               <div className="flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-red-500" />
+                <XCircle className="w-5 h-5 text-destructive" />
                 <span>{resultData.total - resultData.correct} Wrong</span>
               </div>
             </div>
