@@ -272,11 +272,11 @@ export default function ExamPractice() {
                 const selected = answers[q.id];
                 const isCorrect = selected === q.correct_answer;
                 return (
-                  <div key={q.id} className={`p-3 rounded-lg border ${isCorrect ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
+                  <div key={q.id} className={`p-3 rounded-lg border ${isCorrect ? "border-primary/30 bg-primary/5" : "border-destructive/30 bg-destructive/5"}`}>
                     <p className="text-sm font-medium">{i + 1}. {q.question_text}</p>
                     <p className="text-xs mt-1">
                       Your answer: <span className="font-semibold">{selected || "Not answered"}</span>
-                      {!isCorrect && <span className="ml-2">Correct: <span className="font-semibold text-green-700">{q.correct_answer}</span></span>}
+                      {!isCorrect && <span className="ml-2">Correct: <span className="font-semibold text-primary">{q.correct_answer}</span></span>}
                     </p>
                     {q.explanation && <p className="text-xs text-muted-foreground mt-1 italic">{q.explanation}</p>}
                   </div>
