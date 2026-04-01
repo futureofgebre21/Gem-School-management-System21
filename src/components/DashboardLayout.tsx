@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import {
   LayoutDashboard, Users, UserCog,
   School, Menu, X, LogOut, ChevronDown, Layers,
-  Calendar, FileText, Megaphone, Home, DollarSign, FileUp,
+  Calendar, FileText, Megaphone, Home, DollarSign, FileUp, BookOpen, ClipboardList, GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,6 +25,9 @@ const navItems = [
   { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements", roles: ["super_admin", "school_admin"] },
   { to: "/dashboard/parent", icon: Home, label: "Parent Portal", roles: ["parent"] },
   { to: "/dashboard/import", icon: FileUp, label: "Import Data", roles: ["super_admin", "school_admin"] },
+  { to: "/dashboard/question-bank", icon: BookOpen, label: "Question Bank", roles: ["super_admin", "school_admin", "teacher"] },
+  { to: "/dashboard/exam-management", icon: ClipboardList, label: "Exam Management", roles: ["super_admin", "school_admin", "teacher"] },
+  { to: "/dashboard/exam-practice", icon: GraduationCap, label: "Model Exams", roles: ["super_admin", "school_admin", "teacher", "student"] },
 ];
 
 export default function DashboardLayout() {

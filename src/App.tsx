@@ -18,6 +18,9 @@ import Fees from "./pages/Fees";
 import ParentPortal from "./pages/ParentPortal";
 import Announcements from "./pages/Announcements";
 import DataImport from "./pages/DataImport";
+import QuestionBank from "./pages/QuestionBank";
+import ExamManagement from "./pages/ExamManagement";
+import ExamPractice from "./pages/ExamPractice";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -71,6 +74,9 @@ const App = () => (
               <Route path="parent" element={<ParentPortal />} />
               <Route path="announcements" element={<Announcements />} />
               <Route path="import" element={<DataImport />} />
+              <Route path="question-bank" element={<QuestionBank />} />
+              <Route path="exam-management" element={<ExamManagement />} />
+              <Route path="exam-practice" element={<ExamPractice />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
