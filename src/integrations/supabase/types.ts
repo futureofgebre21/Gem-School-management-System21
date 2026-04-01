@@ -187,6 +187,335 @@ export type Database = {
           },
         ]
       }
+      exam_attempts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          exam_id: string
+          id: string
+          percentage: number | null
+          school_id: string
+          score: number | null
+          started_at: string
+          status: string
+          student_id: string
+          total_questions: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          exam_id: string
+          id?: string
+          percentage?: number | null
+          school_id: string
+          score?: number | null
+          started_at?: string
+          status?: string
+          student_id: string
+          total_questions?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          exam_id?: string
+          id?: string
+          percentage?: number | null
+          school_id?: string
+          score?: number | null
+          started_at?: string
+          status?: string
+          student_id?: string
+          total_questions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_attempts_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_attempts_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_attempts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_question_links: {
+        Row: {
+          exam_id: string
+          id: string
+          question_id: string
+          question_order: number | null
+        }
+        Insert: {
+          exam_id: string
+          id?: string
+          question_id: string
+          question_order?: number | null
+        }
+        Update: {
+          exam_id?: string
+          id?: string
+          question_id?: string
+          question_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_question_links_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_question_links_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "exam_questions_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_questions_bank: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          created_by: string | null
+          difficulty_level: string
+          explanation: string | null
+          grade_level: string
+          id: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question_text: string
+          school_id: string
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          created_by?: string | null
+          difficulty_level?: string
+          explanation?: string | null
+          grade_level: string
+          id?: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question_text: string
+          school_id: string
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          created_by?: string | null
+          difficulty_level?: string
+          explanation?: string | null
+          grade_level?: string
+          id?: string
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          question_text?: string
+          school_id?: string
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_questions_bank_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_questions_bank_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_results_summary: {
+        Row: {
+          created_at: string
+          exam_id: string
+          id: string
+          percentage: number
+          rank: number | null
+          school_id: string
+          student_id: string
+          total_correct: number
+          total_wrong: number
+        }
+        Insert: {
+          created_at?: string
+          exam_id: string
+          id?: string
+          percentage?: number
+          rank?: number | null
+          school_id: string
+          student_id: string
+          total_correct?: number
+          total_wrong?: number
+        }
+        Update: {
+          created_at?: string
+          exam_id?: string
+          id?: string
+          percentage?: number
+          rank?: number | null
+          school_id?: string
+          student_id?: string
+          total_correct?: number
+          total_wrong?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_results_summary_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_results_summary_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_results_summary_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_student_answers: {
+        Row: {
+          answered_at: string | null
+          attempt_id: string
+          id: string
+          is_correct: boolean | null
+          question_id: string
+          selected_answer: string | null
+        }
+        Insert: {
+          answered_at?: string | null
+          attempt_id: string
+          id?: string
+          is_correct?: boolean | null
+          question_id: string
+          selected_answer?: string | null
+        }
+        Update: {
+          answered_at?: string | null
+          attempt_id?: string
+          id?: string
+          is_correct?: boolean | null
+          question_id?: string
+          selected_answer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_student_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "exam_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_student_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "exam_questions_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exams: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          exam_title: string
+          exam_type: string
+          grade_level: string
+          id: string
+          is_published: boolean
+          school_id: string
+          subject_id: string
+          time_limit_minutes: number
+          total_questions: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          exam_title: string
+          exam_type?: string
+          grade_level: string
+          id?: string
+          is_published?: boolean
+          school_id: string
+          subject_id: string
+          time_limit_minutes?: number
+          total_questions?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          exam_title?: string
+          exam_type?: string
+          grade_level?: string
+          id?: string
+          is_published?: boolean
+          school_id?: string
+          subject_id?: string
+          time_limit_minutes?: number
+          total_questions?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exams_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exams_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_payments: {
         Row: {
           amount_paid: number
