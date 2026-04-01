@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import {
   LayoutDashboard, Users, UserCog,
   School, Menu, X, LogOut, ChevronDown, Layers,
-  Calendar, FileText, Megaphone, Home, DollarSign, FileUp,
+  Calendar, FileText, Megaphone, Home, DollarSign, FileUp, BookOpen, ClipboardList, GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
