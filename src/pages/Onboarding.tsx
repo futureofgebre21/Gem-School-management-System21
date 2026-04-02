@@ -65,8 +65,46 @@ export default function Onboarding() {
     if (!selectedRole) { toast.error("Please select your role"); return; }
     if (selectedRole === "school_admin") {
       setStep("school-create");
+    } else if (selectedRole === "teacher") {
+      setStep("teacher-verify");
     } else {
       setStep("school-code");
+    }
+  };
+
+  const handleTeacherVerify = async () => {
+    if (!teacherSchoolCode.trim() || !teacherId.trim()) {
+      toast.error("Please enter both School Code and Teacher ID");
+      return;
+    }
+    setTeacherVerifying(true);
+    try {
+      const { data: schoolData, error: schoolError } = await supabase.rpc("get_school_by_code", { _code: teacherSchoolCode.trim() });
+      if (schoolError || !schoolData || (Array.isArray(schoolData) && schoolData.length === 0)) {
+        toast.error("Invalid school code. Please check and try again.");
+        setTeacherVerifying(false);
+        return;
+      }
+      const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
+
+      const { data: teacher, error: teacherError } = await supabase.from("teachers")
+        .select("id, first_name, last_name")
+        .eq("school_id", school.id)
+        .eq("id", teacherId.trim())
+        .eq("status", "active")
+        .single();
+
+      if (teacherError || !teacher) {
+        toast.error("Teacher not found. Please verify your Teacher ID and School Code with your administrator.");
+        setTeacherVerifying(false);
+        return;
+      }
+
+      await assignRole(school.id, "teacher");
+    } catch (error: any) {
+      toast.error(getUserFriendlyError(error));
+    } finally {
+      setTeacherVerifying(false);
     }
   };
 
