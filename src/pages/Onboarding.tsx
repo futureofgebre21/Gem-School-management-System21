@@ -239,6 +239,48 @@ export default function Onboarding() {
           </Card>
         )}
 
+        {step === "teacher-verify" && (
+          <Card className="shadow-card">
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl flex items-center justify-center gap-2">
+                <Users className="w-5 h-5" /> Teacher Verification
+              </CardTitle>
+              <CardDescription>
+                Enter your School Code and Teacher ID to verify your registration
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>School Code</Label>
+                <Input
+                  value={teacherSchoolCode}
+                  onChange={e => setTeacherSchoolCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. GEM-X1"
+                  className="font-mono text-lg tracking-widest text-center uppercase"
+                  maxLength={10}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Teacher ID</Label>
+                <Input
+                  value={teacherId}
+                  onChange={e => setTeacherId(e.target.value)}
+                  placeholder="Enter your Teacher ID (UUID)"
+                  className="font-mono"
+                />
+                <p className="text-xs text-muted-foreground">Your Teacher ID is provided by your school administrator.</p>
+              </div>
+              <Button className="w-full" onClick={handleTeacherVerify} disabled={teacherVerifying || !teacherSchoolCode.trim() || !teacherId.trim()}>
+                {teacherVerifying ? "Verifying..." : "Verify & Join"}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={() => { setStep("role-select"); setTeacherSchoolCode(""); setTeacherId(""); }}>
+                ← Back to role selection
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {step === "school-create" && (
           <Card className="shadow-card">
             <CardHeader className="text-center">
