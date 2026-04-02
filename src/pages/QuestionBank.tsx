@@ -1,100 +1,71 @@
-import { useState } from "react";
-import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Edit } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Plus, Search, Trash2, Edit, Upload } from "lucide-react";
+import { useQuestionBank } from "@/components/question-bank/useQuestionBank";
+import QuestionFormDialog from "@/components/question-bank/QuestionFormDialog";
+import BulkUploadDialog from "@/components/question-bank/BulkUploadDialog";
+import { emptyForm } from "@/components/question-bank/types";
+import type { QuestionForm } from "@/components/question-bank/types";
 
 export default function QuestionBank() {
-  const { user, schoolId, userRole } = useAuth();
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const { subjects, questions, isLoading, isStaff, addQuestion, updateQuestion, deleteQuestion, bulkInsert } = useQuestionBank();
+
   const [search, setSearch] = useState("");
-  const [filterSubject, setFilterSubject] = useState<string>("all");
-  const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
+  const [filterSubject, setFilterSubject] = useState("all");
+  const [filterDifficulty, setFilterDifficulty] = useState("all");
+  const [filterGrade, setFilterGrade] = useState("all");
 
-  const [form, setForm] = useState({
-    subject_id: "",
-    grade_level: "",
-    question_text: "",
-    option_a: "",
-    option_b: "",
-    option_c: "",
-    option_d: "",
-    correct_answer: "",
-    explanation: "",
-    difficulty_level: "medium",
-  });
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [editId, setEditId] = useState("");
+  const [form, setForm] = useState<QuestionForm>({ ...emptyForm });
 
-  const isStaff = userRole === "super_admin" || userRole === "school_admin" || userRole === "teacher";
+  const filtered = useMemo(() => {
+    if (!questions) return [];
+    return questions.filter(q => {
+      if (filterSubject !== "all" && q.subject_id !== filterSubject) return false;
+      if (filterDifficulty !== "all" && q.difficulty_level !== filterDifficulty) return false;
+      if (filterGrade !== "all" && q.grade_level !== filterGrade) return false;
+      if (search && !q.question_text.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+  }, [questions, filterSubject, filterDifficulty, filterGrade, search]);
 
-  const { data: subjects } = useQuery({
-    queryKey: ["subjects", schoolId],
-    queryFn: async () => {
-      const q = supabase.from("subjects").select("*");
-      if (schoolId) q.eq("school_id", schoolId);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!schoolId,
-  });
+  const grades = useMemo(() => {
+    if (!questions) return [];
+    return [...new Set(questions.map(q => q.grade_level))].sort();
+  }, [questions]);
 
-  const { data: questions, isLoading } = useQuery({
-    queryKey: ["exam_questions", schoolId, filterSubject, filterDifficulty],
-    queryFn: async () => {
-      let q = supabase.from("exam_questions_bank").select("*, subjects(name)");
-      if (schoolId) q = q.eq("school_id", schoolId);
-      if (filterSubject !== "all") q = q.eq("subject_id", filterSubject);
-      if (filterDifficulty !== "all") q = q.eq("difficulty_level", filterDifficulty);
-      const { data, error } = await q.order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!schoolId,
-  });
+  const openEdit = (q: any) => {
+    setEditId(q.id);
+    setForm({
+      subject_id: q.subject_id,
+      grade_level: q.grade_level,
+      question_text: q.question_text,
+      option_a: q.option_a,
+      option_b: q.option_b,
+      option_c: q.option_c,
+      option_d: q.option_d,
+      correct_answer: q.correct_answer,
+      explanation: q.explanation || "",
+      difficulty_level: q.difficulty_level,
+    });
+    setEditOpen(true);
+  };
 
-  const addQuestion = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("exam_questions_bank").insert({
-        ...form,
-        school_id: schoolId!,
-        created_by: user?.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["exam_questions"] });
-      setOpen(false);
-      setForm({ subject_id: "", grade_level: "", question_text: "", option_a: "", option_b: "", option_c: "", option_d: "", correct_answer: "", explanation: "", difficulty_level: "medium" });
-      toast({ title: "Question added successfully" });
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
+  const handleAdd = () => {
+    addQuestion.mutate(form, { onSuccess: () => { setAddOpen(false); setForm({ ...emptyForm }); } });
+  };
 
-  const deleteQuestion = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("exam_questions_bank").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["exam_questions"] });
-      toast({ title: "Question deleted" });
-    },
-  });
-
-  const filtered = questions?.filter(q =>
-    q.question_text.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleUpdate = () => {
+    updateQuestion.mutate({ id: editId, ...form }, { onSuccess: () => { setEditOpen(false); setForm({ ...emptyForm }); } });
+  };
 
   const difficultyColor = (d: string) => {
     if (d === "easy") return "bg-green-100 text-green-800";
@@ -106,80 +77,24 @@ export default function QuestionBank() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Question Bank</h1>
-          <p className="text-sm text-muted-foreground">Manage exam questions for model exams</p>
+          <h1 className="text-2xl font-bold text-foreground">Question Bank Manager</h1>
+          <p className="text-sm text-muted-foreground">
+            Upload, manage, and organize exam questions &middot; {questions?.length ?? 0} total questions
+          </p>
         </div>
         {isStaff && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-2" />Add Question</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Add New Question</DialogTitle></DialogHeader>
-              <div className="grid gap-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Subject</Label>
-                    <Select value={form.subject_id} onValueChange={v => setForm(f => ({ ...f, subject_id: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
-                      <SelectContent>
-                        {subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Grade Level</Label>
-                    <Input value={form.grade_level} onChange={e => setForm(f => ({ ...f, grade_level: e.target.value }))} placeholder="e.g. Grade 9" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Difficulty</Label>
-                    <Select value={form.difficulty_level} onValueChange={v => setForm(f => ({ ...f, difficulty_level: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="easy">Easy</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="hard">Hard</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Correct Answer</Label>
-                    <Select value={form.correct_answer} onValueChange={v => setForm(f => ({ ...f, correct_answer: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="B">B</SelectItem>
-                        <SelectItem value="C">C</SelectItem>
-                        <SelectItem value="D">D</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label>Question Text</Label>
-                  <Textarea value={form.question_text} onChange={e => setForm(f => ({ ...f, question_text: e.target.value }))} rows={3} />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><Label>Option A</Label><Input value={form.option_a} onChange={e => setForm(f => ({ ...f, option_a: e.target.value }))} /></div>
-                  <div><Label>Option B</Label><Input value={form.option_b} onChange={e => setForm(f => ({ ...f, option_b: e.target.value }))} /></div>
-                  <div><Label>Option C</Label><Input value={form.option_c} onChange={e => setForm(f => ({ ...f, option_c: e.target.value }))} /></div>
-                  <div><Label>Option D</Label><Input value={form.option_d} onChange={e => setForm(f => ({ ...f, option_d: e.target.value }))} /></div>
-                </div>
-                <div>
-                  <Label>Explanation (optional)</Label>
-                  <Textarea value={form.explanation} onChange={e => setForm(f => ({ ...f, explanation: e.target.value }))} rows={2} />
-                </div>
-                <Button onClick={() => addQuestion.mutate()} disabled={!form.subject_id || !form.question_text || !form.correct_answer || !form.option_a || !form.option_b || !form.option_c || !form.option_d || !form.grade_level}>
-                  Save Question
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="w-4 h-4 mr-2" />Bulk Upload
+            </Button>
+            <Button onClick={() => { setForm({ ...emptyForm }); setAddOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" />Add Question
+            </Button>
+          </div>
         )}
       </div>
 
+      {/* Filters */}
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -192,6 +107,13 @@ export default function QuestionBank() {
               <SelectContent>
                 <SelectItem value="all">All Subjects</SelectItem>
                 {subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterGrade} onValueChange={setFilterGrade}>
+              <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Grades" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Grades</SelectItem>
+                {grades.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
@@ -208,8 +130,8 @@ export default function QuestionBank() {
         <CardContent>
           {isLoading ? (
             <p className="text-center text-muted-foreground py-8">Loading questions...</p>
-          ) : !filtered?.length ? (
-            <p className="text-center text-muted-foreground py-8">No questions found. Add your first question!</p>
+          ) : !filtered.length ? (
+            <p className="text-center text-muted-foreground py-8">No questions found. Upload questions or add them manually!</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -220,7 +142,7 @@ export default function QuestionBank() {
                     <TableHead>Grade</TableHead>
                     <TableHead>Difficulty</TableHead>
                     <TableHead>Answer</TableHead>
-                    {isStaff && <TableHead className="w-20">Actions</TableHead>}
+                    {isStaff && <TableHead className="w-24">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -232,7 +154,10 @@ export default function QuestionBank() {
                       <TableCell><Badge className={difficultyColor(q.difficulty_level)}>{q.difficulty_level}</Badge></TableCell>
                       <TableCell><Badge variant="outline">{q.correct_answer}</Badge></TableCell>
                       {isStaff && (
-                        <TableCell>
+                        <TableCell className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(q)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => deleteQuestion.mutate(q.id)}>
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
@@ -246,6 +171,26 @@ export default function QuestionBank() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <QuestionFormDialog
+        open={addOpen} onOpenChange={setAddOpen}
+        form={form} setForm={setForm}
+        onSubmit={handleAdd} isPending={addQuestion.isPending}
+        subjects={subjects} title="Add New Question" submitLabel="Save Question"
+      />
+      <QuestionFormDialog
+        open={editOpen} onOpenChange={setEditOpen}
+        form={form} setForm={setForm}
+        onSubmit={handleUpdate} isPending={updateQuestion.isPending}
+        subjects={subjects} title="Edit Question" submitLabel="Update Question"
+      />
+      <BulkUploadDialog
+        open={bulkOpen} onOpenChange={setBulkOpen}
+        subjects={subjects}
+        onImport={async (rows) => { await bulkInsert.mutateAsync(rows); }}
+        isPending={bulkInsert.isPending}
+      />
     </div>
   );
 }
