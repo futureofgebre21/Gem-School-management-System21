@@ -205,6 +205,9 @@ export default function Auth() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Strong password required: must include uppercase letters, lowercase letters, numbers, and special characters (symbols).
+                    </p>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}

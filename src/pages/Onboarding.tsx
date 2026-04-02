@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { GraduationCap, UserCog, Users, Home, ArrowRight, Building2, Hash, CheckCircle2, Copy } from "lucide-react";
 
-type Step = "role-select" | "school-code" | "school-create" | "school-created";
+type Step = "role-select" | "school-code" | "school-create" | "school-created" | "teacher-verify";
 
 const roles = [
   { value: "school_admin", label: "Admin", icon: UserCog, desc: "Create & manage your school" },
@@ -32,6 +32,9 @@ export default function Onboarding() {
   const [foundSchool, setFoundSchool] = useState<{ id: string; name: string; school_code: string } | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
   const [createdSchoolCode, setCreatedSchoolCode] = useState("");
+  const [teacherSchoolCode, setTeacherSchoolCode] = useState("");
+  const [teacherId, setTeacherId] = useState("");
+  const [teacherVerifying, setTeacherVerifying] = useState(false);
 
   const lookupSchoolCode = async () => {
     if (!schoolCode.trim()) { toast.error("Please enter a school code"); return; }
@@ -62,8 +65,46 @@ export default function Onboarding() {
     if (!selectedRole) { toast.error("Please select your role"); return; }
     if (selectedRole === "school_admin") {
       setStep("school-create");
+    } else if (selectedRole === "teacher") {
+      setStep("teacher-verify");
     } else {
       setStep("school-code");
+    }
+  };
+
+  const handleTeacherVerify = async () => {
+    if (!teacherSchoolCode.trim() || !teacherId.trim()) {
+      toast.error("Please enter both School Code and Teacher ID");
+      return;
+    }
+    setTeacherVerifying(true);
+    try {
+      const { data: schoolData, error: schoolError } = await supabase.rpc("get_school_by_code", { _code: teacherSchoolCode.trim() });
+      if (schoolError || !schoolData || (Array.isArray(schoolData) && schoolData.length === 0)) {
+        toast.error("Invalid school code. Please check and try again.");
+        setTeacherVerifying(false);
+        return;
+      }
+      const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
+
+      const { data: teacher, error: teacherError } = await supabase.from("teachers")
+        .select("id, first_name, last_name")
+        .eq("school_id", school.id)
+        .eq("id", teacherId.trim())
+        .eq("status", "active")
+        .single();
+
+      if (teacherError || !teacher) {
+        toast.error("Teacher not found. Please verify your Teacher ID and School Code with your administrator.");
+        setTeacherVerifying(false);
+        return;
+      }
+
+      await assignRole(school.id, "teacher");
+    } catch (error: any) {
+      toast.error(getUserFriendlyError(error));
+    } finally {
+      setTeacherVerifying(false);
     }
   };
 
@@ -198,6 +239,48 @@ export default function Onboarding() {
           </Card>
         )}
 
+        {step === "teacher-verify" && (
+          <Card className="shadow-card">
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl flex items-center justify-center gap-2">
+                <Users className="w-5 h-5" /> Teacher Verification
+              </CardTitle>
+              <CardDescription>
+                Enter your School Code and Teacher ID to verify your registration
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>School Code</Label>
+                <Input
+                  value={teacherSchoolCode}
+                  onChange={e => setTeacherSchoolCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. GEM-X1"
+                  className="font-mono text-lg tracking-widest text-center uppercase"
+                  maxLength={10}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Teacher ID</Label>
+                <Input
+                  value={teacherId}
+                  onChange={e => setTeacherId(e.target.value)}
+                  placeholder="Enter your Teacher ID (UUID)"
+                  className="font-mono"
+                />
+                <p className="text-xs text-muted-foreground">Your Teacher ID is provided by your school administrator.</p>
+              </div>
+              <Button className="w-full" onClick={handleTeacherVerify} disabled={teacherVerifying || !teacherSchoolCode.trim() || !teacherId.trim()}>
+                {teacherVerifying ? "Verifying..." : "Verify & Join"}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={() => { setStep("role-select"); setTeacherSchoolCode(""); setTeacherId(""); }}>
+                ← Back to role selection
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {step === "school-create" && (
           <Card className="shadow-card">
             <CardHeader className="text-center">
@@ -227,7 +310,7 @@ export default function Onboarding() {
                   <div><Label>Country</Label><Input value={newSchool.country} onChange={e => setNewSchool({ ...newSchool, country: e.target.value })} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Phone</Label><Input value={newSchool.phone} onChange={e => setNewSchool({ ...newSchool, phone: e.target.value })} /></div>
+                  <div><Label>Phone</Label><Input value={newSchool.phone} onChange={e => setNewSchool({ ...newSchool, phone: e.target.value.replace(/[^0-9+\-() ]/g, '') })} placeholder="Numbers only" inputMode="tel" /></div>
                   <div><Label>Email</Label><Input type="email" value={newSchool.email} onChange={e => setNewSchool({ ...newSchool, email: e.target.value })} /></div>
                 </div>
               </div>
