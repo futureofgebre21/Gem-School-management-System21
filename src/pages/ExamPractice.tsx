@@ -1,369 +1,211 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookOpen, Clock, Play, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import GradeSelection from "@/components/exam-practice/GradeSelection";
+import SubjectSelection from "@/components/exam-practice/SubjectSelection";
+import ExamEngine from "@/components/exam-practice/ExamEngine";
+import ExamResults from "@/components/exam-practice/ExamResults";
 
-type ExamView = "list" | "taking" | "result";
+type View = "grade" | "subject" | "taking" | "result";
+
+const STORAGE_KEY = "gem_exam_session";
+const DEFAULT_TIME_MINUTES = 90;
+const MAX_QUESTIONS = 50;
+
+interface ResultData {
+  correct: number;
+  total: number;
+  pct: number;
+  questions: any[];
+  answers: Record<string, string>;
+}
+
+interface ExamSession {
+  attemptId: string;
+  questions: any[];
+  timeLeftSeconds: number;
+  answers: Record<string, string>;
+}
 
 export default function ExamPractice() {
   const { user, schoolId, userRole } = useAuth();
-  const queryClient = useQueryClient();
-  const [view, setView] = useState<ExamView>("list");
-  const [currentExam, setCurrentExam] = useState<any>(null);
-  const [currentAttempt, setCurrentAttempt] = useState<any>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [resultData, setResultData] = useState<any>(null);
+  const [view, setView] = useState<View>("grade");
+  const [selectedGrade, setSelectedGrade] = useState("");
+  const [subjectName, setSubjectName] = useState("");
+  const [session, setSession] = useState<ExamSession | null>(null);
+  const [resultData, setResultData] = useState<ResultData | null>(null);
+
+  // Resume in-progress attempt on mount
+  useEffect(() => {
+    const resumeSession = async () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      try {
+        const parsed = JSON.parse(saved);
+        // Check if attempt is still in_progress
+        const { data: attempt } = await supabase
+          .from("exam_attempts")
+          .select("*, exams(exam_title, subject_id, subjects(name), grade_level)")
+          .eq("id", parsed.attemptId)
+          .eq("status", "in_progress")
+          .single();
+
+        if (!attempt) {
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+
+        // Fetch questions
+        const { data: questionRows } = await supabase
+          .from("exam_questions_bank")
+          .select("*")
+          .in("id", parsed.questionIds);
+
+        if (!questionRows?.length) {
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+
+        // Preserve original order
+        const ordered = parsed.questionIds
+          .map((id: string) => questionRows.find((q: any) => q.id === id))
+          .filter(Boolean);
+
+        setSubjectName((attempt as any).exams?.subjects?.name || "Exam");
+        setSelectedGrade((attempt as any).exams?.grade_level || "");
+        setSession({
+          attemptId: parsed.attemptId,
+          questions: ordered,
+          timeLeftSeconds: parsed.timeLeft,
+          answers: parsed.answers || {},
+        });
+        setView("taking");
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    };
+    resumeSession();
+  }, []);
 
   // Get student record
-  const { data: studentRecord } = useQuery({
-    queryKey: ["my_student_record", user?.id, schoolId],
-    queryFn: async () => {
-      // Find student by looking up the deterministic email pattern
-      const { data, error } = await supabase
-        .from("students")
-        .select("*")
-        .eq("school_id", schoolId!)
-        .limit(100);
-      if (error) throw error;
-      // For student role, find their record (match by created auth)
-      return data?.find(s => {
-        const testEmail = `student_${s.id}@gemschool.internal`;
-        return user?.email === testEmail;
-      }) || data?.[0] || null;
-    },
-    enabled: !!schoolId && userRole === "student",
-  });
+  const getStudentRecord = useCallback(async () => {
+    if (!schoolId || !user) return null;
+    const { data } = await supabase
+      .from("students")
+      .select("*")
+      .eq("school_id", schoolId)
+      .limit(200);
+    return data?.find((s) => user.email === `student_${s.id}@gemschool.internal`) || null;
+  }, [schoolId, user]);
 
-  // Published exams
-  const { data: exams, isLoading } = useQuery({
-    queryKey: ["published_exams", schoolId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("exams")
-        .select("*, subjects(name)")
-        .eq("school_id", schoolId!)
-        .eq("is_published", true)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!schoolId,
-  });
+  const handleGradeSelect = (grade: string) => {
+    setSelectedGrade(grade);
+    setView("subject");
+  };
 
-  // Exam history
-  const { data: attempts } = useQuery({
-    queryKey: ["my_attempts", studentRecord?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("exam_attempts")
-        .select("*, exams(exam_title, subjects(name))")
-        .eq("student_id", studentRecord!.id)
-        .eq("status", "completed")
-        .order("completed_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!studentRecord?.id,
-  });
-
-  // Timer
-  useEffect(() => {
-    if (view !== "taking" || timeLeft <= 0) return;
-    const interval = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) {
-          clearInterval(interval);
-          handleSubmit();
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [view, timeLeft]);
-
-  const startExam = async (exam: any) => {
-    if (!studentRecord) {
+  const handleStartExam = async (subjectId: string, name: string, questionCount: number) => {
+    const studentRecord = await getStudentRecord();
+    if (!studentRecord && userRole === "student") {
       toast({ title: "Student record not found", variant: "destructive" });
       return;
     }
 
-    // Fetch questions for this exam
-    const { data: links, error: linkErr } = await supabase
-      .from("exam_question_links")
-      .select("*, exam_questions_bank(*)")
-      .eq("exam_id", exam.id)
-      .order("question_order");
+    // Fetch random questions
+    const limit = Math.min(questionCount, MAX_QUESTIONS);
+    const { data: questions, error } = await supabase
+      .from("exam_questions_bank")
+      .select("id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, difficulty_level")
+      .eq("school_id", schoolId!)
+      .eq("subject_id", subjectId)
+      .eq("grade_level", selectedGrade)
+      .limit(limit);
 
-    if (linkErr || !links?.length) {
-      toast({ title: "No questions available for this exam", variant: "destructive" });
+    if (error || !questions?.length) {
+      toast({ title: "No questions available", variant: "destructive" });
       return;
     }
 
+    // Shuffle
+    const shuffled = questions.sort(() => Math.random() - 0.5);
+
     // Create attempt
-    const { data: attempt, error: attemptErr } = await supabase
+    const studentId = studentRecord?.id || user!.id;
+    const { data: attempt, error: aErr } = await supabase
       .from("exam_attempts")
       .insert({
         school_id: schoolId!,
-        student_id: studentRecord.id,
-        exam_id: exam.id,
-        total_questions: links.length,
+        student_id: studentId,
+        exam_id: subjectId, // Using subject as reference for practice mode
+        total_questions: shuffled.length,
       })
       .select()
       .single();
 
-    if (attemptErr) {
-      toast({ title: "Error starting exam", description: attemptErr.message, variant: "destructive" });
+    if (aErr) {
+      toast({ title: "Error starting exam", description: aErr.message, variant: "destructive" });
       return;
     }
 
-    setCurrentExam(exam);
-    setCurrentAttempt(attempt);
-    setQuestions(links.map(l => (l as any).exam_questions_bank));
-    setCurrentIdx(0);
-    setAnswers({});
-    setTimeLeft(exam.time_limit_minutes * 60);
+    setSubjectName(name);
+    setSession({
+      attemptId: attempt.id,
+      questions: shuffled,
+      timeLeftSeconds: DEFAULT_TIME_MINUTES * 60,
+      answers: {},
+    });
     setView("taking");
   };
 
-  const handleSubmit = useCallback(async () => {
-    if (!currentAttempt || !questions.length) return;
-
-    let correct = 0;
-    const answerRows = questions.map(q => {
-      const selected = answers[q.id] || null;
-      const isCorrect = selected === q.correct_answer;
-      if (isCorrect) correct++;
-      return {
-        attempt_id: currentAttempt.id,
-        question_id: q.id,
-        selected_answer: selected,
-        is_correct: isCorrect,
-      };
-    });
-
-    // Insert answers
-    await supabase.from("exam_student_answers").insert(answerRows);
-
-    const pct = Math.round((correct / questions.length) * 100);
-
-    // Update attempt
-    await supabase.from("exam_attempts").update({
-      status: "completed",
-      completed_at: new Date().toISOString(),
-      score: correct,
-      percentage: pct,
-    }).eq("id", currentAttempt.id);
-
-    // Insert result summary
-    await supabase.from("exam_results_summary").insert({
-      school_id: schoolId!,
-      student_id: currentAttempt.student_id,
-      exam_id: currentAttempt.exam_id,
-      total_correct: correct,
-      total_wrong: questions.length - correct,
-      percentage: pct,
-    });
-
-    setResultData({ correct, total: questions.length, pct });
+  const handleFinish = (result: ResultData) => {
+    setResultData(result);
     setView("result");
-    queryClient.invalidateQueries({ queryKey: ["my_attempts"] });
-  }, [currentAttempt, questions, answers, schoolId, queryClient]);
-
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Taking Exam View
-  if (view === "taking" && questions.length) {
-    const q = questions[currentIdx];
-    const progress = ((currentIdx + 1) / questions.length) * 100;
+  const handleBackToExams = () => {
+    setView("grade");
+    setSelectedGrade("");
+    setSubjectName("");
+    setSession(null);
+    setResultData(null);
+  };
 
+  if (view === "grade") {
+    return <GradeSelection onSelect={handleGradeSelect} />;
+  }
+
+  if (view === "subject") {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold text-lg text-foreground">{currentExam?.exam_title}</h2>
-          <Badge variant={timeLeft < 60 ? "destructive" : "secondary"} className="text-base px-3 py-1">
-            <Clock className="w-4 h-4 mr-1" />{formatTime(timeLeft)}
-          </Badge>
-        </div>
-        <Progress value={progress} className="h-2" />
-        <p className="text-sm text-muted-foreground">Question {currentIdx + 1} of {questions.length}</p>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base leading-relaxed">{q.question_text}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {["A", "B", "C", "D"].map(opt => {
-              const text = q[`option_${opt.toLowerCase()}`];
-              const selected = answers[q.id] === opt;
-              return (
-                <button
-                  key={opt}
-                  onClick={() => setAnswers(a => ({ ...a, [q.id]: opt }))}
-                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                    selected ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <span className="font-semibold mr-3">{opt}.</span>{text}
-                </button>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-between">
-          <Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i - 1)}>
-            <ArrowLeft className="w-4 h-4 mr-1" />Previous
-          </Button>
-          {currentIdx < questions.length - 1 ? (
-            <Button onClick={() => setCurrentIdx(i => i + 1)}>
-              Next<ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} variant="default">Submit Exam</Button>
-          )}
-        </div>
-      </div>
+      <SubjectSelection
+        grade={selectedGrade}
+        schoolId={schoolId!}
+        onBack={() => setView("grade")}
+        onStart={handleStartExam}
+      />
     );
   }
 
-  // Result View
+  if (view === "taking" && session) {
+    return (
+      <ExamEngine
+        session={session}
+        subjectName={subjectName}
+        grade={selectedGrade}
+        onFinish={handleFinish}
+      />
+    );
+  }
+
   if (view === "result" && resultData) {
     return (
-      <div className="max-w-lg mx-auto space-y-6">
-        <Card className="text-center">
-          <CardHeader>
-            <Trophy className="w-16 h-16 mx-auto text-primary mb-2" />
-            <CardTitle className="text-2xl">Exam Completed!</CardTitle>
-            <CardDescription>{currentExam?.exam_title}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-5xl font-bold text-primary">{resultData.pct}%</div>
-            <div className="flex justify-center gap-8 text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-primary" />
-                <span>{resultData.correct} Correct</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-destructive" />
-                <span>{resultData.total - resultData.correct} Wrong</span>
-              </div>
-            </div>
-            <Progress value={resultData.pct} className="h-3" />
-
-            {/* Review answers */}
-            <div className="text-left space-y-3 mt-6">
-              <h3 className="font-semibold">Review</h3>
-              {questions.map((q, i) => {
-                const selected = answers[q.id];
-                const isCorrect = selected === q.correct_answer;
-                return (
-                  <div key={q.id} className={`p-3 rounded-lg border ${isCorrect ? "border-primary/30 bg-primary/5" : "border-destructive/30 bg-destructive/5"}`}>
-                    <p className="text-sm font-medium">{i + 1}. {q.question_text}</p>
-                    <p className="text-xs mt-1">
-                      Your answer: <span className="font-semibold">{selected || "Not answered"}</span>
-                      {!isCorrect && <span className="ml-2">Correct: <span className="font-semibold text-primary">{q.correct_answer}</span></span>}
-                    </p>
-                    {q.explanation && <p className="text-xs text-muted-foreground mt-1 italic">{q.explanation}</p>}
-                  </div>
-                );
-              })}
-            </div>
-
-            <Button onClick={() => { setView("list"); setCurrentExam(null); setResultData(null); }} className="w-full">
-              Back to Exams
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <ExamResults
+        {...resultData}
+        subjectName={subjectName}
+        grade={selectedGrade}
+        onBackToExams={handleBackToExams}
+      />
     );
   }
 
-  // Exam List View
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Model Exam Practice</h1>
-        <p className="text-sm text-muted-foreground">Practice exams and track your performance</p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          <p className="text-muted-foreground col-span-full text-center py-8">Loading exams...</p>
-        ) : !exams?.length ? (
-          <p className="text-muted-foreground col-span-full text-center py-8">No exams available yet.</p>
-        ) : (
-          exams.map(exam => (
-            <Card key={exam.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-base">{exam.exam_title}</CardTitle>
-                  <Badge variant={exam.exam_type === "model" ? "default" : "secondary"}>{exam.exam_type}</Badge>
-                </div>
-                <CardDescription>{(exam as any).subjects?.name} · {exam.grade_level}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                  <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{exam.total_questions} Qs</span>
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{exam.time_limit_minutes} min</span>
-                </div>
-                {userRole === "student" && (
-                  <Button className="w-full" onClick={() => startExam(exam)}>
-                    <Play className="w-4 h-4 mr-2" />Start Exam
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {/* Exam History */}
-      {userRole === "student" && attempts?.length ? (
-        <Card>
-          <CardHeader><CardTitle>Exam History</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Exam</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Percentage</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {attempts.map(a => (
-                  <TableRow key={a.id}>
-                    <TableCell>{(a as any).exams?.exam_title}</TableCell>
-                    <TableCell>{(a as any).exams?.subjects?.name}</TableCell>
-                    <TableCell>{a.score}/{a.total_questions}</TableCell>
-                    <TableCell>
-                      <Badge variant={Number(a.percentage) >= 50 ? "default" : "destructive"}>{a.percentage}%</Badge>
-                    </TableCell>
-                    <TableCell>{a.completed_at ? new Date(a.completed_at).toLocaleDateString() : "—"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      ) : null}
-    </div>
-  );
+  return null;
 }
