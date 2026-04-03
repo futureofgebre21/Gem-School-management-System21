@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle, X } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle, X, Eye, List } from "lucide-react";
 import { parseExcelOrCSV } from "./parseUpload";
 import type { ParsedQuestion } from "./types";
 import { toast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Props {
   open: boolean;
@@ -18,10 +19,13 @@ interface Props {
   isPending: boolean;
 }
 
+type ViewMode = "summary" | "detail";
+
 export default function BulkUploadDialog({ open, onOpenChange, subjects, onImport, isPending }: Props) {
   const [parsed, setParsed] = useState<ParsedQuestion[]>([]);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("summary");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback(async (file: File) => {
@@ -49,6 +53,7 @@ export default function BulkUploadDialog({ open, onOpenChange, subjects, onImpor
         }
       });
       setParsed(rows);
+      setViewMode("detail");
       toast({ title: `${rows.length} questions parsed from file` });
     } catch (e: any) {
       toast({ title: "Parse error", description: e.message, variant: "destructive" });
@@ -84,14 +89,15 @@ export default function BulkUploadDialog({ open, onOpenChange, subjects, onImpor
   const updateSubject = (idx: number, subjectId: string) => {
     setParsed(p => p.map((q, i) => {
       if (i !== idx) return q;
-      const updated = { ...q, subject_id: subjectId, errors: q.errors.filter(e => !e.includes("Subject")) };
+      const subjectName = subjects?.find(s => s.id === subjectId)?.name || q.subject_name;
+      const updated = { ...q, subject_id: subjectId, subject_name: subjectName, errors: q.errors.filter(e => !e.includes("Subject") && !e.includes("subject")) };
       return updated;
     }));
   };
 
   return (
     <Dialog open={open} onOpenChange={o => { onOpenChange(o); if (!o) setParsed([]); }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5" /> Bulk Upload Questions
@@ -108,6 +114,7 @@ export default function BulkUploadDialog({ open, onOpenChange, subjects, onImpor
                 Subject, Grade Level, Question Text, Option A, Option B, Option C, Option D, Correct Answer, Explanation, Difficulty
               </code>
               <p className="text-muted-foreground">Correct Answer must be A, B, C, or D. Difficulty: easy, medium, or hard.</p>
+              <p className="text-muted-foreground">CSV files: comma, semicolon, and tab delimiters are auto-detected.</p>
             </div>
 
             {/* Drop zone */}
@@ -131,7 +138,7 @@ export default function BulkUploadDialog({ open, onOpenChange, subjects, onImpor
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Summary */}
+            {/* Summary bar */}
             <div className="flex items-center gap-4 flex-wrap">
               <Badge variant="outline" className="gap-1">
                 <CheckCircle className="w-3 h-3 text-green-600" /> {validCount} valid
@@ -142,6 +149,27 @@ export default function BulkUploadDialog({ open, onOpenChange, subjects, onImpor
                 </Badge>
               )}
               <span className="text-sm text-muted-foreground">{parsed.length} total questions</span>
+
+              {/* View toggle */}
+              <div className="flex gap-1 border rounded-md p-0.5">
+                <Button
+                  variant={viewMode === "summary" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setViewMode("summary")}
+                >
+                  <List className="w-3 h-3 mr-1" /> Summary
+                </Button>
+                <Button
+                  variant={viewMode === "detail" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setViewMode("detail")}
+                >
+                  <Eye className="w-3 h-3 mr-1" /> Full Review
+                </Button>
+              </div>
+
               <div className="ml-auto flex gap-2">
                 <Button variant="outline" onClick={() => setParsed([])}>Re-upload</Button>
                 <Button onClick={handleImport} disabled={isPending || validCount === 0}>
@@ -150,62 +178,135 @@ export default function BulkUploadDialog({ open, onOpenChange, subjects, onImpor
               </div>
             </div>
 
-            {/* Preview table */}
-            <div className="overflow-x-auto max-h-[50vh] overflow-y-auto border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8">#</TableHead>
-                    <TableHead>Question</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead>Answer</TableHead>
-                    <TableHead>Difficulty</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {parsed.map((q, i) => (
-                    <TableRow key={i} className={q.errors.length ? "bg-destructive/5" : ""}>
-                      <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell className="max-w-[200px] truncate text-sm">{q.question_text}</TableCell>
-                      <TableCell>
-                        {q.subject_id ? (
-                          <span className="text-sm">{q.subject_name}</span>
-                        ) : (
-                          <Select onValueChange={v => updateSubject(i, v)}>
-                            <SelectTrigger className="h-7 text-xs w-28">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">{q.grade_level}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs">{q.correct_answer}</Badge></TableCell>
-                      <TableCell className="text-sm capitalize">{q.difficulty_level}</TableCell>
-                      <TableCell>
-                        {q.errors.length ? (
-                          <span className="text-xs text-destructive" title={q.errors.join(", ")}>
-                            <AlertTriangle className="w-3 h-3 inline mr-1" />{q.errors[0]}
-                          </span>
-                        ) : (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRow(i)}>
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            {/* Review table */}
+            <ScrollArea className="max-h-[55vh]">
+              <div className="overflow-x-auto border rounded-lg">
+                {viewMode === "summary" ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-8">#</TableHead>
+                        <TableHead>Question</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Grade</TableHead>
+                        <TableHead>Answer</TableHead>
+                        <TableHead>Difficulty</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-10"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {parsed.map((q, i) => (
+                        <TableRow key={i} className={q.errors.length ? "bg-destructive/5" : ""}>
+                          <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                          <TableCell className="max-w-[200px] truncate text-sm">{q.question_text}</TableCell>
+                          <TableCell>
+                            {q.subject_id ? (
+                              <span className="text-sm">{q.subject_name}</span>
+                            ) : (
+                              <Select onValueChange={v => updateSubject(i, v)}>
+                                <SelectTrigger className="h-7 text-xs w-28">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">{q.grade_level}</TableCell>
+                          <TableCell><Badge variant="outline" className="text-xs">{q.correct_answer}</Badge></TableCell>
+                          <TableCell className="text-sm capitalize">{q.difficulty_level}</TableCell>
+                          <TableCell>
+                            {q.errors.length ? (
+                              <span className="text-xs text-destructive" title={q.errors.join(", ")}>
+                                <AlertTriangle className="w-3 h-3 inline mr-1" />{q.errors[0]}
+                              </span>
+                            ) : (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRow(i)}>
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  /* Full Review Table — shows all columns so the user can verify correct splitting */
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-8">#</TableHead>
+                        <TableHead className="min-w-[60px]">Subject</TableHead>
+                        <TableHead className="min-w-[50px]">Grade</TableHead>
+                        <TableHead className="min-w-[180px]">Question Text</TableHead>
+                        <TableHead className="min-w-[100px]">Option A</TableHead>
+                        <TableHead className="min-w-[100px]">Option B</TableHead>
+                        <TableHead className="min-w-[100px]">Option C</TableHead>
+                        <TableHead className="min-w-[100px]">Option D</TableHead>
+                        <TableHead className="min-w-[50px]">Answer</TableHead>
+                        <TableHead className="min-w-[100px]">Explanation</TableHead>
+                        <TableHead className="min-w-[60px]">Difficulty</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-10"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {parsed.map((q, i) => (
+                        <TableRow key={i} className={q.errors.length ? "bg-destructive/5" : ""}>
+                          <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                          <TableCell className="text-xs">
+                            {q.subject_id ? (
+                              q.subject_name
+                            ) : (
+                              <Select onValueChange={v => updateSubject(i, v)}>
+                                <SelectTrigger className="h-7 text-xs w-24">
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs">{q.grade_level}</TableCell>
+                          <TableCell className="text-xs max-w-[220px]">
+                            <span className="line-clamp-2">{q.question_text}</span>
+                          </TableCell>
+                          <TableCell className="text-xs max-w-[120px] truncate">{q.option_a}</TableCell>
+                          <TableCell className="text-xs max-w-[120px] truncate">{q.option_b}</TableCell>
+                          <TableCell className="text-xs max-w-[120px] truncate">{q.option_c}</TableCell>
+                          <TableCell className="text-xs max-w-[120px] truncate">{q.option_d}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">{q.correct_answer}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs max-w-[120px] truncate">{q.explanation}</TableCell>
+                          <TableCell className="text-xs capitalize">{q.difficulty_level}</TableCell>
+                          <TableCell>
+                            {q.errors.length ? (
+                              <span className="text-xs text-destructive" title={q.errors.join(", ")}>
+                                <AlertTriangle className="w-3 h-3 inline mr-1" />{q.errors.length}
+                              </span>
+                            ) : (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRow(i)}>
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </ScrollArea>
           </div>
         )}
       </DialogContent>

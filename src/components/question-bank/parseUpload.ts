@@ -41,6 +41,17 @@ function normalizeHeader(h: string): string {
   return HEADER_MAP[key] || key;
 }
 
+function detectDelimiter(text: string): string {
+  const firstLine = text.split(/\r?\n/)[0] || "";
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semicolonCount = (firstLine.match(/;/g) || []).length;
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+
+  if (tabCount >= commaCount && tabCount >= semicolonCount && tabCount > 0) return "\t";
+  if (semicolonCount > commaCount && semicolonCount > 0) return ";";
+  return ",";
+}
+
 function validateRow(row: ParsedQuestion, existingTexts: Set<string>): string[] {
   const errors: string[] = [];
   if (!row.question_text?.trim()) errors.push("Missing question text");
@@ -71,7 +82,21 @@ function validateRow(row: ParsedQuestion, existingTexts: Set<string>): string[] 
 }
 
 export function parseExcelOrCSV(buffer: ArrayBuffer, fileName: string): ParsedQuestion[] {
-  const wb = XLSX.read(buffer, { type: "array" });
+  const isCSV = /\.csv$/i.test(fileName);
+
+  let wb: XLSX.WorkBook;
+
+  if (isCSV) {
+    // Decode the buffer to text and detect delimiter manually
+    const decoder = new TextDecoder("utf-8");
+    const text = decoder.decode(buffer);
+    const delimiter = detectDelimiter(text);
+    // Use XLSX with explicit FS (field separator)
+    wb = XLSX.read(text, { type: "string", FS: delimiter });
+  } else {
+    wb = XLSX.read(buffer, { type: "array" });
+  }
+
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const raw: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
