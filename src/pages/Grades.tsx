@@ -394,7 +394,14 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
           </Select>
         </div>
         <Button onClick={generate} disabled={loading}>{loading ? "Loading..." : "Generate"}</Button>
-        {report.length > 0 && <Button variant="outline" onClick={exportCSV}><Download className="w-4 h-4 mr-1" />Export</Button>}
+        {report.length > 0 && (
+          <ExportMenu
+            title="Report Cards"
+            headers={["Rank", "Student ID", "Name", "Average", "Grade"]}
+            rows={report.map((r, i) => [(r as any).rank ?? i + 1, r.id_number, r.name, r.avg.toFixed(1), getGradeFromPercentage(r.avg)])}
+            filename="report-cards"
+          />
+        )}
       </div>
 
       {report.length > 0 && (
