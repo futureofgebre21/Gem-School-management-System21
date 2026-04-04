@@ -348,19 +348,6 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
     setLoading(false);
   };
 
-  const exportCSV = () => {
-    if (!report.length) return;
-    const allSubjects = [...new Set(report.flatMap(r => r.subjects.map(s => s.name)))];
-    const headers = ["Student ID", "Name", ...allSubjects, "Average", "Grade"];
-    const rows = report.map(r => {
-      const subScores = allSubjects.map(sub => { const f = r.subjects.find(s => s.name === sub); return f ? f.score : ""; });
-      return [r.id_number, r.name, ...subScores, r.avg.toFixed(1), getGradeFromPercentage(r.avg)];
-    });
-    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "report-cards.csv"; a.click();
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3 items-end">
