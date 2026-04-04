@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Users, UserCog,
   School, Menu, X, LogOut, ChevronDown, Layers,
   Calendar, FileText, Megaphone, Home, DollarSign, FileUp, BookOpen, ClipboardList, GraduationCap,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
