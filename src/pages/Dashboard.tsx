@@ -38,12 +38,12 @@ export default function Dashboard() {
   }, [isStudent, isParent, user]);
 
   useEffect(() => {
-    if (isStudent) {
+    if (isStudent && linkedStudentId) {
       fetchStudentData();
-      return;
+    } else if (!isStudent && !isParent) {
+      fetchStats();
     }
-    fetchStats();
-  }, [schoolId, userRole]);
+  }, [schoolId, userRole, linkedStudentId]);
 
   const fetchStudentData = async () => {
     if (!user || !schoolId) return;
