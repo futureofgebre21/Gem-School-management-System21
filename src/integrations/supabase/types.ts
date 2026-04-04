@@ -844,6 +844,10 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          linked_student_id: string | null
+          parent_name_locked: string | null
+          parent_phone_locked: string | null
+          parent_search_count: number
           phone: string | null
           school_id: string | null
           updated_at: string
@@ -853,6 +857,10 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          linked_student_id?: string | null
+          parent_name_locked?: string | null
+          parent_phone_locked?: string | null
+          parent_search_count?: number
           phone?: string | null
           school_id?: string | null
           updated_at?: string
@@ -862,11 +870,22 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          linked_student_id?: string | null
+          parent_name_locked?: string | null
+          parent_phone_locked?: string | null
+          parent_search_count?: number
           phone?: string | null
           school_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_linked_student_id_fkey"
+            columns: ["linked_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_school_id_fkey"
             columns: ["school_id"]
