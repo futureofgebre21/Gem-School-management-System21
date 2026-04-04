@@ -415,7 +415,7 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
           <TableBody>
             {report.map((r, i) => (
               <TableRow key={i}>
-                <TableCell className="font-bold">{i + 1}</TableCell>
+                <TableCell className="font-bold">{getOrdinal((r as any).rank ?? i + 1)}</TableCell>
                 <TableCell className="font-mono text-sm">{r.id_number}</TableCell>
                 <TableCell className="font-medium">{r.name}</TableCell>
                 <TableCell className="text-sm">{r.subjects.map(s => `${s.name}: ${s.score}`).join(", ")}</TableCell>
