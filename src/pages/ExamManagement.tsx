@@ -177,7 +177,7 @@ export default function ExamManagement() {
                       <SelectContent>{subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div><Label>Grade Level</Label><Input value={form.grade_level} onChange={e => setForm(f => ({ ...f, grade_level: e.target.value }))} placeholder="e.g. Grade 10" /></div>
+                  <div><Label>Grade Level</Label><Input type="number" value={form.grade_id || ""} onChange={e => setForm(f => ({ ...f, grade_id: parseInt(e.target.value) || 0 }))} placeholder="e.g. 10" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div><Label>Total Questions</Label><Input type="number" value={form.total_questions} onChange={e => setForm(f => ({ ...f, total_questions: parseInt(e.target.value) || 10 }))} /></div>
