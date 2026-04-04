@@ -21,6 +21,7 @@ import DataImport from "./pages/DataImport";
 import QuestionBank from "./pages/QuestionBank";
 import ExamManagement from "./pages/ExamManagement";
 import ExamPractice from "./pages/ExamPractice";
+import Support from "./pages/Support";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
