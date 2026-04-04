@@ -124,6 +124,9 @@ export default function DashboardLayout() {
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
           <Outlet />
         </main>
+        <footer className="border-t border-border px-4 py-3 text-center text-xs text-muted-foreground">
+          © 2026 All Rights Reserved – Gem School Management
+        </footer>
       </div>
     </div>
   );
