@@ -462,7 +462,7 @@ export type Database = {
           created_by: string | null
           exam_title: string
           exam_type: string
-          grade_level: string
+          grade_id: number
           id: string
           is_published: boolean
           school_id: string
@@ -476,7 +476,7 @@ export type Database = {
           created_by?: string | null
           exam_title: string
           exam_type?: string
-          grade_level: string
+          grade_id: number
           id?: string
           is_published?: boolean
           school_id: string
@@ -490,7 +490,7 @@ export type Database = {
           created_by?: string | null
           exam_title?: string
           exam_type?: string
-          grade_level?: string
+          grade_id?: number
           id?: string
           is_published?: boolean
           school_id?: string
@@ -646,6 +646,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      grade_level: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          level_name: string | null
+          level_number: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          level_name?: string | null
+          level_number?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          level_name?: string | null
+          level_number?: number | null
+        }
+        Relationships: []
       }
       grades: {
         Row: {
