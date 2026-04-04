@@ -58,32 +58,24 @@ export default function Dashboard() {
       .order("created_at", { ascending: false })
       .limit(10);
     setStudentGrades(grades ?? []);
-        .eq("school_id", schoolId)
-        .in("student_id", studentIds)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      setStudentGrades(grades ?? []);
 
-      // Get attendance stats
-      const { data: att } = await supabase.from("student_attendance")
-        .select("status")
-        .eq("school_id", schoolId)
-        .in("student_id", studentIds);
+    // Get attendance stats
+    const { data: att } = await supabase.from("student_attendance")
+      .select("status")
+      .eq("school_id", schoolId)
+      .in("student_id", studentIds);
 
-      const attData = att ?? [];
-      setStudentAttendance({
-        present: attData.filter(a => a.status === "present").length,
-        absent: attData.filter(a => a.status === "absent").length,
-        late: attData.filter(a => a.status === "late").length,
-        total: attData.length,
-      });
-    }
+    const attData = att ?? [];
+    setStudentAttendance({
+      present: attData.filter(a => a.status === "present").length,
+      absent: attData.filter(a => a.status === "absent").length,
+      late: attData.filter(a => a.status === "late").length,
+      total: attData.length,
+    });
 
     // Get school info
-    if (schoolId) {
-      const { data: school } = await supabase.from("schools").select("name, school_code").eq("id", schoolId).single();
-      if (school) setSchoolInfo(school);
-    }
+    const { data: school } = await supabase.from("schools").select("name, school_code").eq("id", schoolId).single();
+    if (school) setSchoolInfo(school);
   };
 
   const fetchStats = async () => {
