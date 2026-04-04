@@ -128,7 +128,16 @@ export default function Dashboard() {
     }
   };
 
-  // Student Dashboard
+  // Show linker for unlinked students/parents
+  if ((isStudent || isParent) && linkedStudentId === null) {
+    return <StudentLinker onLinked={() => setLinkedStudentId("refresh")} />;
+  }
+
+  // Still loading linked status
+  if ((isStudent || isParent) && linkedStudentId === undefined) {
+    return <div className="text-center py-12 text-muted-foreground">Loading...</div>;
+  }
+
   if (isStudent) {
     const attPct = studentAttendance.total > 0 ? ((studentAttendance.present / studentAttendance.total) * 100).toFixed(1) : "0";
     return (
