@@ -33,6 +33,12 @@ function getGradeFromPercentage(pct: number): string {
   return "F";
 }
 
+function getOrdinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 function toPercentage(score: number, maxScore: number): number {
   return (score / maxScore) * 100;
 }
