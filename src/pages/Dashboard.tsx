@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -11,6 +11,7 @@ import {
   Copy, Plus, Calendar, Hash, FileUp, FileText, BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
+import StudentLinker from "@/components/StudentLinker";
 
 export default function Dashboard() {
   const { user, schoolId, userRole } = useAuth();
