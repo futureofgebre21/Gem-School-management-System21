@@ -24,7 +24,7 @@ export default function ExamManagement() {
   const [form, setForm] = useState({
     exam_title: "",
     subject_id: "",
-    grade_level: "",
+    grade_id: 0,
     total_questions: 10,
     time_limit_minutes: 60,
     exam_type: "practice",
@@ -95,7 +95,7 @@ export default function ExamManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["exams"] });
       setOpen(false);
-      setForm({ exam_title: "", subject_id: "", grade_level: "", total_questions: 10, time_limit_minutes: 60, exam_type: "practice" });
+      setForm({ exam_title: "", subject_id: "", grade_id: 0, total_questions: 10, time_limit_minutes: 60, exam_type: "practice" });
       toast({ title: "Exam created successfully" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -177,7 +177,7 @@ export default function ExamManagement() {
                       <SelectContent>{subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div><Label>Grade Level</Label><Input value={form.grade_level} onChange={e => setForm(f => ({ ...f, grade_level: e.target.value }))} placeholder="e.g. Grade 10" /></div>
+                  <div><Label>Grade Level</Label><Input type="number" value={form.grade_id || ""} onChange={e => setForm(f => ({ ...f, grade_id: parseInt(e.target.value) || 0 }))} placeholder="e.g. 10" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div><Label>Total Questions</Label><Input type="number" value={form.total_questions} onChange={e => setForm(f => ({ ...f, total_questions: parseInt(e.target.value) || 10 }))} /></div>
@@ -193,7 +193,7 @@ export default function ExamManagement() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={() => createExam.mutate()} disabled={!form.exam_title || !form.subject_id || !form.grade_level}>Save Exam</Button>
+                <Button onClick={() => createExam.mutate()} disabled={!form.exam_title || !form.subject_id || !form.grade_id}>Save Exam</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -263,7 +263,7 @@ export default function ExamManagement() {
                     <TableRow key={exam.id}>
                       <TableCell className="font-medium">{exam.exam_title}</TableCell>
                       <TableCell>{(exam as any).subjects?.name || "—"}</TableCell>
-                      <TableCell>{exam.grade_level}</TableCell>
+                      <TableCell>Grade {exam.grade_id}</TableCell>
                       <TableCell><BookOpen className="w-3 h-3 inline mr-1" />{exam.total_questions}</TableCell>
                       <TableCell><Clock className="w-3 h-3 inline mr-1" />{exam.time_limit_minutes}m</TableCell>
                       <TableCell><Badge variant={exam.exam_type === "model" ? "default" : "secondary"}>{exam.exam_type}</Badge></TableCell>
