@@ -46,21 +46,9 @@ export default function Dashboard() {
   }, [schoolId, userRole, linkedStudentId]);
 
   const fetchStudentData = async () => {
-    if (!user || !schoolId) return;
+    if (!user || !schoolId || !linkedStudentId) return;
 
-    // Find student record linked to this user (by matching email or user_id)
-    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
-
-    // Try to find student by parent_email matching user email
-    const { data: studentRecords } = await supabase
-      .from("students")
-      .select("id, first_name, last_name, student_id_number")
-      .eq("school_id", schoolId)
-      .eq("status", "active");
-
-    // Match student by checking if the user's email matches student's parent_email or by student_id_number
-    // For now, we get recent grades and attendance for any linked student
-    const studentIds = (studentRecords ?? []).map(s => s.id);
+    const studentIds = [linkedStudentId];
 
     if (studentIds.length > 0) {
       // Get recent grades
