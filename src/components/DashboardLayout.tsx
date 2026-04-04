@@ -29,6 +29,7 @@ const navItems = [
   { to: "/dashboard/question-bank", icon: BookOpen, label: "Question Bank", roles: ["super_admin", "school_admin", "teacher"] },
   { to: "/dashboard/exam-management", icon: ClipboardList, label: "Exam Management", roles: ["super_admin", "school_admin", "teacher"] },
   { to: "/dashboard/exam-practice", icon: GraduationCap, label: "Model Exams", roles: ["super_admin", "school_admin", "teacher", "student"] },
+  { to: "/dashboard/support", icon: HelpCircle, label: "Support", roles: ["super_admin", "school_admin", "teacher", "student", "parent"] },
 ];
 
 export default function DashboardLayout() {
