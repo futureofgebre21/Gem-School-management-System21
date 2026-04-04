@@ -335,7 +335,10 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
     Object.values(byStudent).forEach(s => {
       s.avg = s.subjects.length ? s.subjects.reduce((sum, sub) => sum + sub.score, 0) / s.subjects.length : 0;
     });
-    setReport(Object.values(byStudent).sort((a, b) => b.avg - a.avg));
+    const sorted = Object.values(byStudent).sort((a, b) => b.avg - a.avg);
+    // Assign ranks
+    sorted.forEach((s, i) => { (s as any).rank = i + 1; });
+    setReport(sorted);
     setLoading(false);
   };
 
