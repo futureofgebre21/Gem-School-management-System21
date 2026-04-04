@@ -95,7 +95,7 @@ export default function ExamManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["exams"] });
       setOpen(false);
-      setForm({ exam_title: "", subject_id: "", grade_level: "", total_questions: 10, time_limit_minutes: 60, exam_type: "practice" });
+      setForm({ exam_title: "", subject_id: "", grade_id: 0, total_questions: 10, time_limit_minutes: 60, exam_type: "practice" });
       toast({ title: "Exam created successfully" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
