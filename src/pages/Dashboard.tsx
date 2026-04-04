@@ -22,10 +22,20 @@ export default function Dashboard() {
   // Student-specific state
   const [studentGrades, setStudentGrades] = useState<any[]>([]);
   const [studentAttendance, setStudentAttendance] = useState<{ present: number; absent: number; late: number; total: number }>({ present: 0, absent: 0, late: 0, total: 0 });
+  const [linkedStudentId, setLinkedStudentId] = useState<string | null | undefined>(undefined);
 
   const isStudent = userRole === "student";
+  const isParent = userRole === "parent";
   const isTeacher = userRole === "teacher";
   const isAdmin = userRole === "school_admin" || userRole === "super_admin";
+
+  // Check if student/parent has linked their profile
+  useEffect(() => {
+    if ((isStudent || isParent) && user) {
+      supabase.from("profiles").select("linked_student_id").eq("id", user.id).single()
+        .then(({ data }) => setLinkedStudentId(data?.linked_student_id ?? null));
+    }
+  }, [isStudent, isParent, user]);
 
   useEffect(() => {
     if (isStudent) {
