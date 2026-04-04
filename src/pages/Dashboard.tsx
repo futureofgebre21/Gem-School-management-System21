@@ -50,10 +50,14 @@ export default function Dashboard() {
 
     const studentIds = [linkedStudentId];
 
-    if (studentIds.length > 0) {
-      // Get recent grades
-      const { data: grades } = await supabase.from("grades")
-        .select("score, grade, term, subjects(name)")
+    // Get recent grades
+    const { data: grades } = await supabase.from("grades")
+      .select("score, grade, term, subjects(name)")
+      .eq("school_id", schoolId)
+      .in("student_id", studentIds)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setStudentGrades(grades ?? []);
         .eq("school_id", schoolId)
         .in("student_id", studentIds)
         .order("created_at", { ascending: false })
