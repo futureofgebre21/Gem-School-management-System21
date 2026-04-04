@@ -78,6 +78,7 @@ const App = () => (
               <Route path="question-bank" element={<QuestionBank />} />
               <Route path="exam-management" element={<ExamManagement />} />
               <Route path="exam-practice" element={<ExamPractice />} />
+              <Route path="support" element={<Support />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
