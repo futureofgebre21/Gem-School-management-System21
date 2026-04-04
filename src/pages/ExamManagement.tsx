@@ -193,7 +193,7 @@ export default function ExamManagement() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={() => createExam.mutate()} disabled={!form.exam_title || !form.subject_id || !form.grade_level}>Save Exam</Button>
+                <Button onClick={() => createExam.mutate()} disabled={!form.exam_title || !form.subject_id || !form.grade_id}>Save Exam</Button>
               </div>
             </DialogContent>
           </Dialog>
