@@ -24,7 +24,7 @@ export default function ExamManagement() {
   const [form, setForm] = useState({
     exam_title: "",
     subject_id: "",
-    grade_level: "",
+    grade_id: 0,
     total_questions: 10,
     time_limit_minutes: 60,
     exam_type: "practice",
