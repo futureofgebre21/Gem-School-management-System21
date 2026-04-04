@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Save, Download, FileText, BarChart3 } from "lucide-react";
+import ExportMenu from "@/components/ExportMenu";
 import { Label } from "@/components/ui/label";
 
 const GRADING_SCALES = [
