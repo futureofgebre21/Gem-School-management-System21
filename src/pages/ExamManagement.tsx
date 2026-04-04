@@ -263,7 +263,7 @@ export default function ExamManagement() {
                     <TableRow key={exam.id}>
                       <TableCell className="font-medium">{exam.exam_title}</TableCell>
                       <TableCell>{(exam as any).subjects?.name || "—"}</TableCell>
-                      <TableCell>{exam.grade_level}</TableCell>
+                      <TableCell>Grade {exam.grade_id}</TableCell>
                       <TableCell><BookOpen className="w-3 h-3 inline mr-1" />{exam.total_questions}</TableCell>
                       <TableCell><Clock className="w-3 h-3 inline mr-1" />{exam.time_limit_minutes}m</TableCell>
                       <TableCell><Badge variant={exam.exam_type === "model" ? "default" : "secondary"}>{exam.exam_type}</Badge></TableCell>
