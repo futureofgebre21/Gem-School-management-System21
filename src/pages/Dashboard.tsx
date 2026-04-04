@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -11,6 +11,7 @@ import {
   Copy, Plus, Calendar, Hash, FileUp, FileText, BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
+import StudentLinker from "@/components/StudentLinker";
 
 export default function Dashboard() {
   const { user, schoolId, userRole } = useAuth();
@@ -21,66 +22,60 @@ export default function Dashboard() {
   // Student-specific state
   const [studentGrades, setStudentGrades] = useState<any[]>([]);
   const [studentAttendance, setStudentAttendance] = useState<{ present: number; absent: number; late: number; total: number }>({ present: 0, absent: 0, late: 0, total: 0 });
+  const [linkedStudentId, setLinkedStudentId] = useState<string | null | undefined>(undefined);
 
   const isStudent = userRole === "student";
+  const isParent = userRole === "parent";
   const isTeacher = userRole === "teacher";
   const isAdmin = userRole === "school_admin" || userRole === "super_admin";
 
+  // Check if student/parent has linked their profile
   useEffect(() => {
-    if (isStudent) {
-      fetchStudentData();
-      return;
+    if ((isStudent || isParent) && user) {
+      supabase.from("profiles").select("linked_student_id").eq("id", user.id).single()
+        .then(({ data }) => setLinkedStudentId(data?.linked_student_id ?? null));
     }
-    fetchStats();
-  }, [schoolId, userRole]);
+  }, [isStudent, isParent, user]);
+
+  useEffect(() => {
+    if (isStudent && linkedStudentId) {
+      fetchStudentData();
+    } else if (!isStudent && !isParent) {
+      fetchStats();
+    }
+  }, [schoolId, userRole, linkedStudentId]);
 
   const fetchStudentData = async () => {
-    if (!user || !schoolId) return;
+    if (!user || !schoolId || !linkedStudentId) return;
 
-    // Find student record linked to this user (by matching email or user_id)
-    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+    const studentIds = [linkedStudentId];
 
-    // Try to find student by parent_email matching user email
-    const { data: studentRecords } = await supabase
-      .from("students")
-      .select("id, first_name, last_name, student_id_number")
+    // Get recent grades
+    const { data: grades } = await supabase.from("grades")
+      .select("score, grade, term, subjects(name)")
       .eq("school_id", schoolId)
-      .eq("status", "active");
+      .in("student_id", studentIds)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setStudentGrades(grades ?? []);
 
-    // Match student by checking if the user's email matches student's parent_email or by student_id_number
-    // For now, we get recent grades and attendance for any linked student
-    const studentIds = (studentRecords ?? []).map(s => s.id);
+    // Get attendance stats
+    const { data: att } = await supabase.from("student_attendance")
+      .select("status")
+      .eq("school_id", schoolId)
+      .in("student_id", studentIds);
 
-    if (studentIds.length > 0) {
-      // Get recent grades
-      const { data: grades } = await supabase.from("grades")
-        .select("score, grade, term, subjects(name)")
-        .eq("school_id", schoolId)
-        .in("student_id", studentIds)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      setStudentGrades(grades ?? []);
-
-      // Get attendance stats
-      const { data: att } = await supabase.from("student_attendance")
-        .select("status")
-        .eq("school_id", schoolId)
-        .in("student_id", studentIds);
-
-      const attData = att ?? [];
-      setStudentAttendance({
-        present: attData.filter(a => a.status === "present").length,
-        absent: attData.filter(a => a.status === "absent").length,
-        late: attData.filter(a => a.status === "late").length,
-        total: attData.length,
-      });
-    }
+    const attData = att ?? [];
+    setStudentAttendance({
+      present: attData.filter(a => a.status === "present").length,
+      absent: attData.filter(a => a.status === "absent").length,
+      late: attData.filter(a => a.status === "late").length,
+      total: attData.length,
+    });
 
     // Get school info
-    if (schoolId) {
-      const { data: school } = await supabase.from("schools").select("name, school_code").eq("id", schoolId).single();
-      if (school) setSchoolInfo(school);
-    }
+    const { data: school } = await supabase.from("schools").select("name, school_code").eq("id", schoolId).single();
+    if (school) setSchoolInfo(school);
   };
 
   const fetchStats = async () => {
@@ -133,7 +128,16 @@ export default function Dashboard() {
     }
   };
 
-  // Student Dashboard
+  // Show linker for unlinked students/parents
+  if ((isStudent || isParent) && linkedStudentId === null) {
+    return <StudentLinker onLinked={() => setLinkedStudentId("refresh")} />;
+  }
+
+  // Still loading linked status
+  if ((isStudent || isParent) && linkedStudentId === undefined) {
+    return <div className="text-center py-12 text-muted-foreground">Loading...</div>;
+  }
+
   if (isStudent) {
     const attPct = studentAttendance.total > 0 ? ((studentAttendance.present / studentAttendance.total) * 100).toFixed(1) : "0";
     return (

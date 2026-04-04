@@ -60,7 +60,7 @@ export default function Index() {
       </div>
 
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        © 2026 Gem School Management. Built for Africa.
+        © 2026 All Rights Reserved – Gem School Management
       </footer>
     </div>
   );

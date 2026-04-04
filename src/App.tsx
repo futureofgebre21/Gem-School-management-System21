@@ -21,6 +21,7 @@ import DataImport from "./pages/DataImport";
 import QuestionBank from "./pages/QuestionBank";
 import ExamManagement from "./pages/ExamManagement";
 import ExamPractice from "./pages/ExamPractice";
+import Support from "./pages/Support";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="question-bank" element={<QuestionBank />} />
               <Route path="exam-management" element={<ExamManagement />} />
               <Route path="exam-practice" element={<ExamPractice />} />
+              <Route path="support" element={<Support />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Users, UserCog,
   School, Menu, X, LogOut, ChevronDown, Layers,
   Calendar, FileText, Megaphone, Home, DollarSign, FileUp, BookOpen, ClipboardList, GraduationCap,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -28,6 +29,7 @@ const navItems = [
   { to: "/dashboard/question-bank", icon: BookOpen, label: "Question Bank", roles: ["super_admin", "school_admin", "teacher"] },
   { to: "/dashboard/exam-management", icon: ClipboardList, label: "Exam Management", roles: ["super_admin", "school_admin", "teacher"] },
   { to: "/dashboard/exam-practice", icon: GraduationCap, label: "Model Exams", roles: ["super_admin", "school_admin", "teacher", "student"] },
+  { to: "/dashboard/support", icon: HelpCircle, label: "Support", roles: ["super_admin", "school_admin", "teacher", "student", "parent"] },
 ];
 
 export default function DashboardLayout() {
@@ -122,6 +124,9 @@ export default function DashboardLayout() {
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
           <Outlet />
         </main>
+        <footer className="border-t border-border px-4 py-3 text-center text-xs text-muted-foreground">
+          © 2026 All Rights Reserved – Gem School Management
+        </footer>
       </div>
     </div>
   );

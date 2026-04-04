@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Save, Download, FileText, BarChart3 } from "lucide-react";
+import ExportMenu from "@/components/ExportMenu";
 import { Label } from "@/components/ui/label";
 
 const GRADING_SCALES = [
@@ -30,6 +31,12 @@ function getGradeFromPercentage(pct: number): string {
   if (pct >= 50) return "D";
   if (pct >= 40) return "E";
   return "F";
+}
+
+function getOrdinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 function toPercentage(score: number, maxScore: number): number {
@@ -334,21 +341,11 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
     Object.values(byStudent).forEach(s => {
       s.avg = s.subjects.length ? s.subjects.reduce((sum, sub) => sum + sub.score, 0) / s.subjects.length : 0;
     });
-    setReport(Object.values(byStudent).sort((a, b) => b.avg - a.avg));
+    const sorted = Object.values(byStudent).sort((a, b) => b.avg - a.avg);
+    // Assign ranks
+    sorted.forEach((s, i) => { (s as any).rank = i + 1; });
+    setReport(sorted);
     setLoading(false);
-  };
-
-  const exportCSV = () => {
-    if (!report.length) return;
-    const allSubjects = [...new Set(report.flatMap(r => r.subjects.map(s => s.name)))];
-    const headers = ["Student ID", "Name", ...allSubjects, "Average", "Grade"];
-    const rows = report.map(r => {
-      const subScores = allSubjects.map(sub => { const f = r.subjects.find(s => s.name === sub); return f ? f.score : ""; });
-      return [r.id_number, r.name, ...subScores, r.avg.toFixed(1), getGradeFromPercentage(r.avg)];
-    });
-    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "report-cards.csv"; a.click();
   };
 
   return (
@@ -390,7 +387,14 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
           </Select>
         </div>
         <Button onClick={generate} disabled={loading}>{loading ? "Loading..." : "Generate"}</Button>
-        {report.length > 0 && <Button variant="outline" onClick={exportCSV}><Download className="w-4 h-4 mr-1" />Export</Button>}
+        {report.length > 0 && (
+          <ExportMenu
+            title="Report Cards"
+            headers={["Rank", "Student ID", "Name", "Average", "Grade"]}
+            rows={report.map((r, i) => [(r as any).rank ?? i + 1, r.id_number, r.name, r.avg.toFixed(1), getGradeFromPercentage(r.avg)])}
+            filename="report-cards"
+          />
+        )}
       </div>
 
       {report.length > 0 && (
@@ -404,7 +408,7 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
           <TableBody>
             {report.map((r, i) => (
               <TableRow key={i}>
-                <TableCell className="font-bold">{i + 1}</TableCell>
+                <TableCell className="font-bold">{getOrdinal((r as any).rank ?? i + 1)}</TableCell>
                 <TableCell className="font-mono text-sm">{r.id_number}</TableCell>
                 <TableCell className="font-medium">{r.name}</TableCell>
                 <TableCell className="text-sm">{r.subjects.map(s => `${s.name}: ${s.score}`).join(", ")}</TableCell>
