@@ -390,8 +390,8 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
         {report.length > 0 && (
           <ExportMenu
             title="Report Cards"
-            headers={["Rank", "Student ID", "Name", "Average", "Grade"]}
-            rows={report.map((r, i) => [(r as any).rank ?? i + 1, r.id_number, r.name, r.avg.toFixed(1), getGradeFromPercentage(r.avg)])}
+            headers={["Student ID", "Name", "Average", "Rank", "Grade"]}
+            rows={report.map((r, i) => [r.id_number, r.name, r.avg.toFixed(1), (r as any).rank ?? i + 1, getGradeFromPercentage(r.avg)])}
             filename="report-cards"
           />
         )}
