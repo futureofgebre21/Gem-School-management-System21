@@ -390,8 +390,8 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
         {report.length > 0 && (
           <ExportMenu
             title="Report Cards"
-            headers={["Rank", "Student ID", "Name", "Average", "Grade"]}
-            rows={report.map((r, i) => [(r as any).rank ?? i + 1, r.id_number, r.name, r.avg.toFixed(1), getGradeFromPercentage(r.avg)])}
+            headers={["Student ID", "Name", "Average", "Rank", "Grade"]}
+            rows={report.map((r, i) => [r.id_number, r.name, r.avg.toFixed(1), (r as any).rank ?? i + 1, getGradeFromPercentage(r.avg)])}
             filename="report-cards"
           />
         )}
@@ -401,18 +401,18 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Rank</TableHead><TableHead>ID</TableHead><TableHead>Name</TableHead>
-              <TableHead>Subjects</TableHead><TableHead>Avg</TableHead><TableHead>Grade</TableHead>
+              <TableHead>ID</TableHead><TableHead>Name</TableHead>
+              <TableHead>Subjects</TableHead><TableHead className="text-right">Avg</TableHead><TableHead className="text-center">Rank</TableHead><TableHead>Grade</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {report.map((r, i) => (
               <TableRow key={i}>
-                <TableCell className="font-bold">{getOrdinal((r as any).rank ?? i + 1)}</TableCell>
                 <TableCell className="font-mono text-sm">{r.id_number}</TableCell>
                 <TableCell className="font-medium">{r.name}</TableCell>
                 <TableCell className="text-sm">{r.subjects.map(s => `${s.name}: ${s.score}`).join(", ")}</TableCell>
-                <TableCell className="font-bold">{r.avg.toFixed(1)}</TableCell>
+                <TableCell className="text-right font-bold">{r.avg.toFixed(1)}</TableCell>
+                <TableCell className="text-center font-bold">{getOrdinal((r as any).rank ?? i + 1)}</TableCell>
                 <TableCell><Badge variant={r.avg >= 50 ? "default" : "destructive"}>{getGradeFromPercentage(r.avg)}</Badge></TableCell>
               </TableRow>
             ))}
