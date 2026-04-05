@@ -77,21 +77,30 @@ export default function StudentLinker({ onLinked }: { onLinked: () => void }) {
 
       let query = supabase.from("students")
         .select("id, first_name, last_name, student_id_number, class, section, school_id, parent_phone, schools(name)")
-        .ilike("first_name", `%${firstName}%`)
-        .ilike("student_id_number", `%${studentId.trim()}%`)
-        .ilike("class", `%${grade.trim()}%`)
+        .eq("student_id_number", studentId.trim())
         .eq("status", "active");
 
+      // Use exact match on first_name (case-insensitive via ilike)
+      query = query.ilike("first_name", firstName);
+      if (lastName) {
+        query = query.ilike("last_name", lastName);
+      }
+
+      // Grade filter - try exact match first
+      query = query.ilike("class", grade.trim());
+
       if (isStudent && section.trim()) {
-        query = query.ilike("section", `%${section.trim()}%`);
+        query = query.ilike("section", section.trim());
       }
 
       if (isParent && parentPhone.trim()) {
         const phone = parentPhone.trim().replace(/\D/g, "");
-        query = query.or(`parent_phone.ilike.%${phone}%`);
+        query = query.ilike("parent_phone", `%${phone}%`);
       }
 
-      const { data, error: dbError } = await query.limit(1).single();
+      const { data, error: dbError } = await query.limit(5);
+
+      const match = data && data.length > 0 ? data[0] : null;
 
       if (dbError || !data) {
         setError("No student found. Please check your details and try again.");

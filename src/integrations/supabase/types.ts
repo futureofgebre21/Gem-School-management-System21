@@ -501,6 +501,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "exams_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "grade_level"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "exams_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false

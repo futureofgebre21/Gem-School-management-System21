@@ -401,8 +401,8 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Rank</TableHead><TableHead>ID</TableHead><TableHead>Name</TableHead>
-              <TableHead>Subjects</TableHead><TableHead>Avg</TableHead><TableHead>Grade</TableHead>
+              <TableHead>ID</TableHead><TableHead>Name</TableHead>
+              <TableHead>Subjects</TableHead><TableHead className="text-right">Avg</TableHead><TableHead className="text-center">Rank</TableHead><TableHead>Grade</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
