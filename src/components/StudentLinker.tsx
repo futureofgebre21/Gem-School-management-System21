@@ -102,12 +102,12 @@ export default function StudentLinker({ onLinked }: { onLinked: () => void }) {
 
       const match = data && data.length > 0 ? data[0] : null;
 
-      if (dbError || !data) {
+      if (dbError || !match) {
         setError("No student found. Please check your details and try again.");
       } else {
         // Additional validation for parent phone
         if (isParent) {
-          const dbPhone = (data.parent_phone ?? "").replace(/\D/g, "");
+          const dbPhone = (match.parent_phone ?? "").replace(/\D/g, "");
           const inputPhone = parentPhone.trim().replace(/\D/g, "");
           if (!dbPhone.includes(inputPhone) && !inputPhone.includes(dbPhone)) {
             setError("Details do not match. Parent phone number does not match our records.");
@@ -115,7 +115,7 @@ export default function StudentLinker({ onLinked }: { onLinked: () => void }) {
             return;
           }
         }
-        setResult(data as unknown as StudentResult);
+        setResult(match as unknown as StudentResult);
 
         // Lock parent info on first search
         if (isParent && !locked && user) {
