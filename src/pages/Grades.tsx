@@ -408,11 +408,11 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
           <TableBody>
             {report.map((r, i) => (
               <TableRow key={i}>
-                <TableCell className="font-bold">{getOrdinal((r as any).rank ?? i + 1)}</TableCell>
                 <TableCell className="font-mono text-sm">{r.id_number}</TableCell>
                 <TableCell className="font-medium">{r.name}</TableCell>
                 <TableCell className="text-sm">{r.subjects.map(s => `${s.name}: ${s.score}`).join(", ")}</TableCell>
-                <TableCell className="font-bold">{r.avg.toFixed(1)}</TableCell>
+                <TableCell className="text-right font-bold">{r.avg.toFixed(1)}</TableCell>
+                <TableCell className="text-center font-bold">{getOrdinal((r as any).rank ?? i + 1)}</TableCell>
                 <TableCell><Badge variant={r.avg >= 50 ? "default" : "destructive"}>{getGradeFromPercentage(r.avg)}</Badge></TableCell>
               </TableRow>
             ))}
