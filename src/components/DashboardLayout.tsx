@@ -54,10 +54,10 @@ export default function DashboardLayout() {
         }`}
       >
         <div className="flex items-center gap-3 p-5 border-b border-sidebar-border">
-          <img src={logo} alt="Gem School Logo" className="w-9 h-9 rounded-lg object-cover" />
+          <img src={logo} alt="GemSIS Logo" className="w-9 h-9 rounded-lg object-cover" />
           <div>
-            <h2 className="font-bold text-sm text-sidebar-foreground">Gem School</h2>
-            <p className="text-xs text-sidebar-foreground/60">Management</p>
+            <h2 className="font-bold text-sm text-sidebar-foreground">GemSIS</h2>
+            <p className="text-xs text-sidebar-foreground/60">School Management</p>
           </div>
         </div>
         <nav className="p-3 space-y-1">
@@ -125,7 +125,7 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
         <footer className="border-t border-border px-4 py-3 text-center text-xs text-muted-foreground">
-          © 2026 All Rights Reserved – Gem School Management
+          © 2026 All Rights Reserved – GemSIS | Proprietary Code of Gem School Management System
         </footer>
       </div>
     </div>
