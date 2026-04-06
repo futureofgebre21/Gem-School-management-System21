@@ -177,6 +177,7 @@ grade: t.grade ?? "",
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Teacher Id</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Subjects</TableHead>
