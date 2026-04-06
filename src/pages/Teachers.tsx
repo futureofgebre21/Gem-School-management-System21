@@ -56,25 +56,49 @@ export default function Teachers() {
     e.preventDefault();
     if (!schoolId) { toast.error("No school assigned"); return; }
 
-    const payload = {
-      first_name: form.first_name,
-      last_name: form.last_name,
-      email: form.email || null,
-      phone: form.phone || null,
-      subjects: form.subjects.split(",").map(s => s.trim()).filter(Boolean),
-      classes: form.classes.split(",").map(s => s.trim()).filter(Boolean),
-      school_id: schoolId,
-    };
+let finalTeacherId = "";
 
-    if (editId) {
-      const { error } = await supabase.from("teachers").update(payload).eq("id", editId);
-      if (error) { toast.error(getUserFriendlyError(error)); return; }
-      toast.success("Teacher updated");
-    } else {
-      const { error } = await supabase.from("teachers").insert(payload);
-      if (error) { toast.error(getUserFriendlyError(error)); return; }
-      toast.success("Teacher registered");
-    }
+  if (!editId) {
+    // 1. የትምህርት ቤቱን ስም ማግኘት (ለ ID Prefix)
+    const { data: schoolData } = await supabase
+      .from("profiles")
+      .select("school_name")
+      .eq("id", (await supabase.auth.getUser()).data.user?.id)
+      .single();
+
+    const prefix = (schoolData?.school_name || "SCH").substring(0, 3).toUpperCase();
+
+    // 2. ቁጥሩን ለመቀጠል ያሉትን መምህራን መቁጠር
+    const { count } = await supabase
+      .from("teachers")
+      .select("*", { count: "exact", head: true })
+      .eq("school_id", schoolId);
+
+    finalTeacherId = `${prefix}-${String((count || 0) + 1).padStart(3, '0')}`;
+  }
+
+  const payload = {
+    first_name: form.first_name,
+    last_name: form.last_name,
+    email: form.email || null,
+    phone: form.phone || null,
+    subjects: form.subjects.split(",").map(s => s.trim()).filter(Boolean),
+    classes: form.classes.split(",").map(s => s.trim()).filter(Boolean),
+    grade: form.grade, 
+    school_id: schoolId,
+    ...(finalTeacherId && { teacher_id: finalTeacherId }), // አዲስ ሲሆን ብቻ ID ይጨምራል
+  };
+
+  if (editId) {
+    const { error } = await supabase.from("teachers").update(payload).eq("id", editId);
+    if (error) { toast.error(getUserFriendlyError(error)); return; }
+    toast.success("Teacher updated");
+  } else {
+    const { error } = await supabase.from("teachers").insert(payload);
+    if (error) { toast.error(getUserFriendlyError(error)); return; }
+    toast.success(`Teacher registered! ID: ${finalTeacherId}`);
+  }
+ 
     setDialogOpen(false);
     setForm(emptyForm);
     setEditId(null);
