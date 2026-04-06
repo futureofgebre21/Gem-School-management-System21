@@ -38,7 +38,7 @@ export default function Dashboard() {
   }, [isStudent, isParent, user]);
 
   useEffect(() => {
-    if (isStudent && linkedStudentId) {
+    if ((isStudent || isParent) && linkedStudentId) {
       fetchStudentData();
     } else if (!isStudent && !isParent) {
       fetchStats();
@@ -138,13 +138,13 @@ export default function Dashboard() {
     return <div className="text-center py-12 text-muted-foreground">Loading...</div>;
   }
 
-  if (isStudent) {
+  if (isStudent || isParent) {
     const attPct = studentAttendance.total > 0 ? ((studentAttendance.present / studentAttendance.total) * 100).toFixed(1) : "0";
     return (
       <div className="space-y-6 animate-fade-in">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{schoolInfo?.name ?? "Student Dashboard"}</h1>
-          <p className="text-muted-foreground text-sm">Welcome back! Here's your academic overview.</p>
+          <h1 className="text-2xl font-bold text-foreground">{schoolInfo?.name ?? (isParent ? "Parent Portal" : "Student Dashboard")}</h1>
+          <p className="text-muted-foreground text-sm">{isParent ? "Your child's academic overview" : "Welcome back! Here's your academic overview."}</p>
         </div>
 
         {/* Attendance Summary */}
@@ -232,7 +232,7 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-foreground">
           {schoolInfo ? schoolInfo.name : "Dashboard"}
         </h1>
-        <p className="text-muted-foreground text-sm">Welcome to Gem School Management</p>
+        <p className="text-muted-foreground text-sm">Welcome to GemSIS – Ethiopia's Digital School</p>
       </div>
 
       {/* Stats Cards - hide student/teacher counts from teachers */}

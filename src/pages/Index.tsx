@@ -19,8 +19,8 @@ export default function Index() {
       <div className="gradient-hero text-primary-foreground">
         <div className="container max-w-5xl py-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Gem School Management Logo" className="w-10 h-10 rounded-lg object-cover" />
-            <span className="font-bold text-lg">Gem School</span>
+            <img src={logo} alt="GemSIS Logo" className="w-10 h-10 rounded-lg object-cover" />
+            <span className="font-bold text-lg">GemSIS</span>
           </div>
           <Button variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" onClick={() => navigate("/auth")}>
             Sign In
@@ -60,7 +60,7 @@ export default function Index() {
       </div>
 
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        © 2026 All Rights Reserved – Gem School Management
+        © 2026 All Rights Reserved – GemSIS | Proprietary Code of Gem School Management System
       </footer>
     </div>
   );
