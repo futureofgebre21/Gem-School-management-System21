@@ -20,7 +20,7 @@ interface Teacher {
   phone: string | null;
   subjects: string[];
   classes: string[];
-grade: string;[]
+grade: string[];
   status: string;
   school_id: string;
 teacher_id?: string;
@@ -177,7 +177,7 @@ grade: t.grade ?? "",
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Teacher Id</TableHead>
+                
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Subjects</TableHead>
