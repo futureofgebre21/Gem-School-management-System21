@@ -207,12 +207,24 @@ grade: t.grade ?? "",
                           {t.classes.map(c => <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>)}
                         </div>
                       </TableCell>
- <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {t.grade.map(g => <Badge key={g} variant="secondary" className="text-xs">{g}</Badge>)}
-                        </div>
-                      </TableCell>
-                   
+<TableCell>
+  <div className="flex flex-wrap gap-1">
+    {t.grade ? (
+      t.grade.split(",").map((g, index) => (
+        <Badge key={index} variant="outline" className="text-[11px]">
+          {g.trim()}
+        </Badge>
+      ))
+    ) : (
+      <span className="text-muted-foreground text-xs">-</span>
+    )}
+  </div>
+</TableCell>
+
+                   <TableCell className="text-sm font-mono text-blue-600">
+  {t.teacher_id || "No ID"}
+</TableCell>
+
                       <TableCell>
                         <Badge variant={t.status === "active" ? "default" : "secondary"} className="capitalize">{t.status}</Badge>
                       </TableCell>
