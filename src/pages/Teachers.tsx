@@ -20,7 +20,7 @@ interface Teacher {
   phone: string | null;
   subjects: string[];
   classes: string[];
-grade: string;
+grade: string;[]
   status: string;
   school_id: string;
 teacher_id?: string;
