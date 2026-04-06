@@ -20,12 +20,14 @@ interface Teacher {
   phone: string | null;
   subjects: string[];
   classes: string[];
+grade: string;
   status: string;
   school_id: string;
+teacher_id?: string;
 }
 
 const emptyForm = {
-  first_name: "", last_name: "", email: "", phone: "", subjects: "", classes: "",
+  first_name: "", last_name: "", email: "", phone: "", subjects: "", classes: "",grade:"",
 };
 
 export default function Teachers() {
