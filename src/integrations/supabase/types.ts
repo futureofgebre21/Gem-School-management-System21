@@ -1135,6 +1135,7 @@ export type Database = {
           id: string
           last_name: string
           parent_email: string | null
+          parent_id: string | null
           parent_name: string | null
           parent_phone: string | null
           photo_url: string | null
@@ -1143,6 +1144,7 @@ export type Database = {
           status: string
           student_id_number: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           address?: string | null
@@ -1155,6 +1157,7 @@ export type Database = {
           id?: string
           last_name: string
           parent_email?: string | null
+          parent_id?: string | null
           parent_name?: string | null
           parent_phone?: string | null
           photo_url?: string | null
@@ -1163,6 +1166,7 @@ export type Database = {
           status?: string
           student_id_number: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           address?: string | null
@@ -1175,6 +1179,7 @@ export type Database = {
           id?: string
           last_name?: string
           parent_email?: string | null
+          parent_id?: string | null
           parent_name?: string | null
           parent_phone?: string | null
           photo_url?: string | null
@@ -1183,6 +1188,7 @@ export type Database = {
           status?: string
           student_id_number?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
