@@ -111,6 +111,7 @@ let finalTeacherId = "";
       first_name: t.first_name, last_name: t.last_name,
       email: t.email ?? "", phone: t.phone ?? "",
       subjects: t.subjects.join(", "), classes: t.classes.join(", "),
+grade: t.grade ?? "",
     });
     setDialogOpen(true);
   };
@@ -180,6 +181,7 @@ let finalTeacherId = "";
                   <TableHead>Phone</TableHead>
                   <TableHead>Subjects</TableHead>
                   <TableHead>Classes</TableHead>
+<TableHead>Grade</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -205,6 +207,12 @@ let finalTeacherId = "";
                           {t.classes.map(c => <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>)}
                         </div>
                       </TableCell>
+ <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {t.grade.map(g => <Badge key={g} variant="secondary" className="text-xs">{g}</Badge>)}
+                        </div>
+                      </TableCell>
+                   
                       <TableCell>
                         <Badge variant={t.status === "active" ? "default" : "secondary"} className="capitalize">{t.status}</Badge>
                       </TableCell>
