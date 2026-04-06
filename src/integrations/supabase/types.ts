@@ -857,6 +857,7 @@ export type Database = {
           parent_search_count: number
           phone: string | null
           school_id: string | null
+          staff_id: string | null
           updated_at: string
         }
         Insert: {
@@ -870,6 +871,7 @@ export type Database = {
           parent_search_count?: number
           phone?: string | null
           school_id?: string | null
+          staff_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -883,6 +885,7 @@ export type Database = {
           parent_search_count?: number
           phone?: string | null
           school_id?: string | null
+          staff_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1387,6 +1390,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_teacher_staff_id: { Args: never; Returns: string }
       get_school_by_code: {
         Args: { _code: string }
         Returns: {
