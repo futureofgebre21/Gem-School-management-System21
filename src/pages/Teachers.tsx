@@ -149,11 +149,12 @@ grade: t.grade ?? "",
               </div>
               <div><Label>Subjects (comma-separated)</Label><Input value={form.subjects} onChange={e => setForm({...form, subjects: e.target.value})} placeholder="Math, English, Science" /></div>
               <div><Label>Classes (comma-separated)</Label><Input value={form.classes} onChange={e => setForm({...form, classes: e.target.value})} placeholder="JSS1, JSS2, SS1" /></div>
+
 <div>
   <Label>Grade (e.g. 11)</Label>
   <Input 
     value={form.grade} 
-    onChange={e => setFormData({...form, grade: e.target.value})} 
+    onChange={e => setForm({...form, grade: e.target.value})} 
     placeholder="Enter grade" 
   />
 </div>
