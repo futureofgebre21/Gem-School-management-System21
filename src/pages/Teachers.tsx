@@ -192,55 +192,71 @@ grade: t.grade ?? "",
 </TableHeader>
 
               <TableBody>
-                {loading ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
-                ) : teachers.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No teachers found</TableCell></TableRow>
-                ) : (
-                  teachers.map(t => (
-                    <TableRow key={t.id}>
-                      <TableCell className="font-medium">{t.first_name} {t.last_name}</TableCell>
-                      <TableCell className="text-sm">{t.email ?? "-"}</TableCell>
-                      <TableCell className="text-sm">{t.phone ?? "-"}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {t.subjects.map(s => <Badge key={s} variant="outline" className="text-xs">{s}</Badge>)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {t.classes.map(c => <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>)}
-                        </div>
-                      </TableCell>
-<TableCell>
-  <div className="flex flex-wrap gap-1">
-    {t.grade ? (
-      t.grade.split(",").map((g, index) => (
-        <Badge key={index} variant="outline" className="text-[11px]">
-          {g.trim()}
-        </Badge>
-      ))
-    ) : (
-      <span className="text-muted-foreground text-xs">-</span>
-    )}
-  </div>
-</TableCell>
+  {loading ? (
+    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+  ) : teachers.length === 0 ? (
+    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No teachers found</TableCell></TableRow>
+  ) : (
+    teachers.map(t => (
+      <TableRow key={t.id}>
+        {/* 1. Name */}
+        <TableCell className="font-medium text-nowrap">{t.first_name} {t.last_name}</TableCell>
+        
+        {/* 2. Teacher ID - ልክ እንደጠየቅከው ከስም ቀጥሎ ገብቷል */}
+        <TableCell className="text-sm font-mono text-blue-600">
+          {t.teacher_id || "No ID"}
+        </TableCell>
 
-                   <TableCell className="text-sm font-mono text-blue-600">
-  {t.teacher_id || "No ID"}
-</TableCell>
+        {/* 3. Email */}
+        <TableCell className="text-sm">{t.email ?? "-"}</TableCell>
+        
+        {/* 4. Phone */}
+        <TableCell className="text-sm">{t.phone ?? "-"}</TableCell>
+        
+        {/* 5. Subjects */}
+        <TableCell>
+          <div className="flex flex-wrap gap-1">
+            {t.subjects.map(s => <Badge key={s} variant="outline" className="text-[11px]">{s}</Badge>)}
+          </div>
+        </TableCell>
+        
+        {/* 6. Classes */}
+        <TableCell>
+          <div className="flex flex-wrap gap-1">
+            {t.classes.map(c => <Badge key={c} variant="secondary" className="text-[11px]">{c}</Badge>)}
+          </div>
+        </TableCell>
 
-                      <TableCell>
-                        <Badge variant={t.status === "active" ? "default" : "secondary"} className="capitalize">{t.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(t)}><Edit className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
+        {/* 7. Grade */}
+        <TableCell>
+          <div className="flex flex-wrap gap-1">
+            {t.grade ? (
+              t.grade.split(",").map((g, index) => (
+                <Badge key={index} variant="outline" className="text-[11px] bg-green-50 text-green-700">
+                  {g.trim()}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-muted-foreground text-xs">-</span>
+            )}
+          </div>
+        </TableCell>
+
+        {/* 8. Status */}
+        <TableCell>
+          <Badge variant={t.status === "active" ? "default" : "secondary"} className="capitalize">{t.status}</Badge>
+        </TableCell>
+        
+        {/* 9. Actions */}
+        <TableCell className="text-right">
+          <Button variant="ghost" size="icon" onClick={() => handleEdit(t)}><Edit className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+        </TableCell>
+      </TableRow>
+    ))
+  )}
+</TableBody>
+
             </Table>
           </div>
         </CardContent>
