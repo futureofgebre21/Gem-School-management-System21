@@ -175,19 +175,22 @@ grade: t.grade ?? "",
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Subjects</TableHead>
-                  <TableHead>Classes</TableHead>
-<TableHead>Grade</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+             
+ 
+<TableHeader>
+  <TableRow>
+    <TableHead>Name</TableHead>
+    <TableHead>Teacher ID</TableHead>
+    <TableHead>Email</TableHead>
+    <TableHead>Phone</TableHead>
+    <TableHead>Subjects</TableHead>
+    <TableHead>Classes</TableHead>
+    <TableHead>Grade</TableHead>
+    <TableHead>Status</TableHead>
+    <TableHead className="text-right">Actions</TableHead>
+  </TableRow>
+</TableHeader>
+
               <TableBody>
                 {loading ? (
                   <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
