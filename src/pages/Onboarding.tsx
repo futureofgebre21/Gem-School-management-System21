@@ -272,7 +272,7 @@ if (updateError) throw updateError;
                 <Input
                   value={teacherId}
                   onChange={e => setTeacherId(e.target.value)}
-                  placeholder="Enter your Teacher ID (UUID)"
+                  placeholder="Enter your Teacher ID "
                   className="font-mono"
                 />
                 <p className="text-xs text-muted-foreground">Your Teacher ID is provided by your school administrator.</p>
