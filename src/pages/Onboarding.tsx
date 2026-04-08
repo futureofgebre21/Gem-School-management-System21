@@ -72,7 +72,7 @@ export default function Onboarding() {
     }
   };
 
-  const handleTeacherVerify = async () => {
+    const handleTeacherVerify = async () => {
     if (!teacherSchoolCode.trim() || !teacherId.trim()) {
       toast.error("Please enter both School Code and Teacher ID");
       return;
@@ -80,40 +80,54 @@ export default function Onboarding() {
     setTeacherVerifying(true);
     try {
       const { data: schoolData, error: schoolError } = await supabase.rpc("get_school_by_code", { _code: teacherSchoolCode.trim() });
+      
+      // 🕵️ መርማሪ መስመር 1: ትምህርት ቤቱን አግኝቶታል?
+      console.log("School search result:", schoolData);
+
       if (schoolError || !schoolData || (Array.isArray(schoolData) && schoolData.length === 0)) {
-        toast.error("Invalid school code. Please check and try again.");
+        toast.error("Invalid school code.");
         setTeacherVerifying(false);
         return;
       }
       const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
 
+      // 🕵️ መርማሪ መስመር 2: ዳታቤዙ ውስጥ ለመፈለግ የያዘው መረጃ ምን ይመስላል?
+      console.log("Searching Teacher with:", { school_id: school.id, teacher_id: teacherId.trim() });
+
       const { data: teacher, error: teacherError } = await supabase.from("teachers")
         .select("id, first_name, last_name")
         .eq("school_id", school.id)
-        .ilike("teacher_id", teacherId.trim())
-        //.eq("status", "active")
+        .eq("teacher_id", teacherId.trim()) // ዳታቤዝህ ላይ 'teacher_id' መሆኑን አረጋግጥ
         .single();
 
+      // 🕵️ መርማሪ መስመር 3: ስህተቱ ምንድነው?
+      if (teacherError) {
+        console.error("Database Error Detail:", teacherError);
+      }
+
       if (teacherError || !teacher) {
-        toast.error("Teacher not found. Please verify your Teacher ID and School Code with your administrator.");
+        toast.error("Teacher not found. Check the console (F12) for details.");
         setTeacherVerifying(false);
         return;
       }
-const { error: updateError } = await supabase
-  .from("teachers")
-  .update({ user_id: user?.id }) 
-  .eq("id", teacher.id);
 
-if (updateError) throw updateError;
-
-
+      // የተቀረው የ Update ኮድህ እዚህ ይቀጥላል...
+      const { error: updateError } = await supabase
+        .from("teachers")
+        .update({ user_id: user?.id }) 
+        .eq("id", teacher.id);
+        
+      if (updateError) throw updateError;
       await assignRole(school.id, "teacher");
+
     } catch (error: any) {
+      console.error("Catch Block Error:", error);
       toast.error(getUserFriendlyError(error));
     } finally {
       setTeacherVerifying(false);
     }
   };
+
 
   const handleJoinSchool = () => {
     if (!foundSchool) { toast.error("Please look up a valid school code first"); return; }
