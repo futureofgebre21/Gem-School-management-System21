@@ -99,6 +99,13 @@ export default function Onboarding() {
         setTeacherVerifying(false);
         return;
       }
+const { error: updateError } = await supabase
+  .from("teachers")
+  .update({ user_id: user?.id }) 
+  .eq("id", teacher.id);
+
+if (updateError) throw updateError;
+
 
       await assignRole(school.id, "teacher");
     } catch (error: any) {
