@@ -21,8 +21,9 @@ function StudentAttendanceView({ schoolId }: { schoolId: string }) {
   useEffect(() => {
     const fetch = async () => {
       if (!user) return;
-      const { data: students } = await supabase.from("students")
-        .select("id").eq("school_id", schoolId).eq("status", "active");
+            const { data: students } = await supabase.from("students")
+        .select("id").eq("school_id", schoolId).eq("user_id", user.id).eq("status", "active");
+
       const studentIds = (students ?? []).map(s => s.id);
       if (studentIds.length === 0) { setLoading(false); return; }
       const { data } = await supabase.from("student_attendance")
