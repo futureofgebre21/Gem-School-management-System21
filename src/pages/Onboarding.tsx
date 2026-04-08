@@ -90,8 +90,8 @@ export default function Onboarding() {
       const { data: teacher, error: teacherError } = await supabase.from("teachers")
         .select("id, first_name, last_name")
         .eq("school_id", school.id)
-        .eq("teacher_id", teacherId.trim().toUpperCase())
-        .eq("status", "active")
+        .eq("teacher_id", teacherId.trim())
+        //.eq("status", "active")
         .single();
 
       if (teacherError || !teacher) {
