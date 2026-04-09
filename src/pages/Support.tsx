@@ -4,7 +4,7 @@ import { Mail, Phone, MessageCircle, Send } from "lucide-react";
 const contacts = [
   { icon: Mail, label: "Email", value: "gemschoolmanagementapp@gmail.com", href: "mailto:gemschoolmanagementapp@gmail.com" },
   { icon: Send, label: "Telegram", value: "@gemschool21", href: "https://t.me/gemschool21" },
-  { icon: MessageCircle, label: "WhatsApp", value: "+125 953071795", href: "https://wa.me/125953071795" },
+  { icon: MessageCircle, label: "WhatsApp", value: "+251 953071795", href: "https://wa.me/251953071795" },
   { icon: Phone, label: "Phone", value: "0953071795", href: "tel:0953071795" },
 ];
 
