@@ -112,11 +112,21 @@ export default function Onboarding() {
       }
 
       // የተቀረው የ Update ኮድህ እዚህ ይቀጥላል...
-      const { error: updateError } = await supabase
-        .from("teachers")
-        .update({ user_id: user?.id }) 
-        .eq("id", teacher.id);
-        
+      
+        console.log("Updating teacher with User ID:", user?.id); // ይህንን ቼክ ለማድረግ ጨምረው
+
+const { error: updateError } = await supabase
+  .from("teachers")
+  .update({ user_id: user?.id }) 
+  .eq("id", teacher.id)
+  .select(); // የሰራ መሆኑን ለማረጋገጥ select() ጨምር
+
+if (updateError) {
+  console.error("Update failed:", updateError.message);
+  toast.error("መረጃውን ማያያዝ አልተቻለም፦ " + updateError.message);
+  return;
+}
+
       if (updateError) throw updateError;
       await assignRole(school.id, "teacher");
 
