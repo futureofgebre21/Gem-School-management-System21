@@ -89,6 +89,13 @@ export default function Onboarding() {
         setTeacherVerifying(false);
         return;
       }
+// 3. መለያው ቀደም ብሎ በሌላ ሰው መያዙን ማረጋገጥ
+if (teacher.user_id) {
+  toast.error("ይህ መለያ ቀደም ብሎ ከሌላ አካውንት ጋር ተያይዟል!");
+  setTeacherVerifying(false);
+  return;
+}
+
       const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
 
       // 🕵️ መርማሪ መስመር 2: ዳታቤዙ ውስጥ ለመፈለግ የያዘው መረጃ ምን ይመስላል?
@@ -97,8 +104,8 @@ export default function Onboarding() {
       const { data: teacher, error: teacherError } = await supabase.from("teachers")
         .select("id, first_name, last_name")
         .eq("school_id", school.id)
-        .eq("teacher_id", teacherId.trim()) // ዳታቤዝህ ላይ 'teacher_id' መሆኑን አረጋግጥ
-        .single();
+        .ilike("teacher_id", teacherId.trim()) // ዳታቤዝህ ላይ 'teacher_id' መሆኑን አረጋግጥ
+        .maybeSingle();
 
       // 🕵️ መርማሪ መስመር 3: ስህተቱ ምንድነው?
       if (teacherError) {
