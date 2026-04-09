@@ -102,7 +102,7 @@ if (teacher.user_id) {
       console.log("Searching Teacher with:", { school_id: school.id, teacher_id: teacherId.trim() });
 
       const { data: teacher, error: teacherError } = await supabase.from("teachers")
-        .select("id, first_name, last_name")
+        .select("id, first_name, last_name,user_id")
         .eq("school_id", school.id)
         .ilike("teacher_id", teacherId.trim()) // ዳታቤዝህ ላይ 'teacher_id' መሆኑን አረጋግጥ
         .maybeSingle();
