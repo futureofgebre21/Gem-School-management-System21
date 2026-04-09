@@ -139,22 +139,44 @@ export default function StudentLinker({ onLinked }: { onLinked: () => void }) {
     setSearching(false);
   };
 
-  const handleConfirm = async () => {
+    const handleConfirm = async () => {
     if (!result || !user) return;
     setConfirming(true);
     try {
+      // 1. በ profiles ቴብል ላይ ማዘመን
       const { error: updateErr } = await supabase.from("profiles")
         .update({ linked_student_id: result.id })
         .eq("id", user.id);
 
       if (updateErr) throw updateErr;
+
+      // 2. ተማሪ ከሆነ፡ የ students ቴብል ላይ user_id መሙላት
+      if (isStudent) {
+        const { error: studentUpdateErr } = await supabase.from("students")
+          .update({ user_id: user.id })
+          .eq("id", result.id);
+          
+        if (studentUpdateErr) throw studentUpdateErr;
+      }
+
+      // 3. ወላጅ ከሆነ፡ parent_students ቴብል ላይ ማያያዝ
+      if (isParent) {
+        const { error: parentLinkErr } = await supabase.from("parent_students")
+          .insert({ parent_id: user.id, student_id: result.id });
+          
+        // ቀድሞ ተያይዞ ከሆነ የሚመጣውን error ችላ እንለዋለን (code 23505)
+        if (parentLinkErr && parentLinkErr.code !== '23505') throw parentLinkErr;
+      }
+
       toast.success("Account linked successfully!");
       onLinked();
     } catch (err: any) {
+      console.error("Linking error:", err);
       toast.error(err.message || "Failed to link account");
     }
     setConfirming(false);
   };
+
 
   return (
     <div className="max-w-lg mx-auto space-y-6 animate-fade-in p-4">
