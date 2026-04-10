@@ -132,9 +132,14 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
     if (!classFilter || !subjectFilter || !yearFilter) return;
     setLoading(true);
 
-    let assignQuery = supabase.from("student_classes")
-      .select("student_id").eq("class_id", classFilter).eq("school_id", schoolId);
+        // ዳታውን ከ entrollments ቴብል አምጣ፣ በዓመተ ምህረትም አጣራው
+    let assignQuery = supabase.from("entrollments")
+      .select("student_id")
+      .eq("class_id", classFilter)
+      .eq("academic_year_id", yearFilter)
+      .eq("school_id", schoolId);
     if (sectionFilter && sectionFilter !== "all") assignQuery = assignQuery.eq("section_id", sectionFilter);
+
     const { data: assignments } = await assignQuery;
     const assignedIds = (assignments ?? []).map(a => a.student_id);
 
