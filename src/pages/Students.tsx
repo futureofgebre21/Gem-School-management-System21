@@ -114,55 +114,67 @@ export default function Students() {
     if (!schoolId) { toast.error("No school assigned"); return; }
     if (!form.class_id || !form.academic_year_id) { toast.error("Please select a class and academic year"); return; }
 
+        const selectedYear = yearsList.find(y => y.id === form.academic_year_id);
+    const selectedClass = classesList.find(c => c.id === form.class_id);
+    const selectedSection = sectionsList.find(s => s.id === form.section_id);
+
     const studentPayload = {
-      first_name: form.first_name, last_name: form.last_name,
-      gender: form.gender || null, date_of_birth: form.date_of_birth || null,
-      parent_name: form.parent_name || null, parent_phone: form.parent_phone || null,
-      parent_email: form.parent_email || null, address: form.address || null,
+      first_name: form.first_name, 
+      last_name: form.last_name,
+      gender: form.gender || null, 
+      date_of_birth: form.date_of_birth || null,
+      parent_name: form.parent_name || null, 
+      parent_phone: form.parent_phone || null,
+      parent_email: form.parent_email || null, 
+      address: form.address || null,
       school_id: schoolId,
-      class: classesList.find(c => c.id === form.class_id)?.name ?? null,
-      section: sectionsList.find(s => s.id === form.section_id)?.name ?? null,
+      class: selectedClass?.name || null,
+      section: selectedSection?.name || null,
+    };
+
+    const enrollmentData = {
+      school_id: schoolId,
+      class_id: form.class_id,
+      section_id: form.section_id || null,
+      academic_year_id: form.academic_year_id,
+      grade_level: selectedClass?.name || null,
+      section: selectedSection?.name || null,
+      school_year: selectedYear?.name || null,
+      status: 'active'
     };
 
     if (editId) {
-      const { error } = await supabase.from("students").update(studentPayload).eq("id", editId);
-      if (error) { toast.error(getUserFriendlyError(error)); return; }
+      const { error: studentErr } = await supabase.from("students").update(studentPayload).eq("id", editId);
+      if (studentErr) { toast.error(getUserFriendlyError(studentErr)); return; }
+      
       await supabase.from("entrollments").delete().eq("student_id", editId).eq("school_id", schoolId);
-      await supabase.from("entrollments").insert({
-        student_id: editId, class_id: form.class_id, section_id: form.section_id || null,
-        academic_year_id: form.academic_year_id, school_id: schoolId,
+      const { error: enrollErr } = await supabase.from("entrollments").insert({
+        student_id: editId,
+        ...enrollmentData
       });
-      toast.success("Student updated");
+      
+      if (enrollErr) { toast.error("Update Error: " + enrollErr.message); return; }
+      toast.success("Student updated successfully");
     } else {
-      const { data: newStudent, error } = await supabase.from("students")
+      const { data: newStudent, error: studentErr } = await supabase.from("students")
         .insert({ ...studentPayload, student_id_number: "" }).select("id").single();
-      if (error) { toast.error(getUserFriendlyError(error)); return; }
-      if (newStudent) {
-  // 1. በትምህርት ቤቱ የተፈጠረውን ዓመተ ምህረት ስም መፈለግ
-  const selectedYear = yearsList.find(y => y.id === form.academic_year_id);
-  // 2. በትምህርት ቤቱ የተፈጠረውን የክፍል ስም መፈለግ
-  const selectedClass = classesList.find(c => c.id === form.class_id);
-  // 3. በትምህርት ቤቱ የተፈጠረውን የሴክሽን ስም መፈለግ
-  const selectedSection = sectionsList.find(s => s.id === form.section_id);
+      
+      if (studentErr) { toast.error(getUserFriendlyError(studentErr)); return; }
 
-  await supabase.from("entrollments").insert({
-    student_id: newStudent.id,
-    school_id: schoolId,
-    // 🔴 ትምህርት ቤቱ የፈጠረው ዳታ እዚህ ጋር ይገባል
-    grade_level: selectedClass?.name || null,
-    section: selectedSection?.name || null,
-    school_year: selectedYear?.name || null, // 👈 እዚህ ጋር ነው በትክክል የሚቀመጠው
-    
-    // 🔴 ለግንኙነት (Relation) የሚያስፈልጉ IDs
-    class_id: form.class_id,
-    section_id: form.section_id || null,
-    academic_year_id: form.academic_year_id,
-    
-    status: 'active'
-  });
-}
-  toast.success("Student registered and enrolled");
-}
+      if (newStudent) {
+        const { error: enrollErr } = await supabase.from("entrollments").insert({
+          student_id: newStudent.id,
+          ...enrollmentData
+        });
+        
+        if (enrollErr) {
+          toast.error("Enrollment Failed: " + enrollErr.message);
+          return;
+        }
+      }
+      toast.success("Student registered and enrolled successfully");
+    }
+
     setDialogOpen(false); setForm(emptyForm); setEditId(null); fetchStudents();
   };
 
