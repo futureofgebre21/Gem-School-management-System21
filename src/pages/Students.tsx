@@ -74,7 +74,7 @@ export default function Students() {
 
     let filteredStudentIds: string[] | null = null;
     if (filterClass) {
-      const { data: assignments } = await supabase.from("student_classes")
+      const { data: assignments } = await supabase.from("entrollments")
         .select("student_id").eq("class_id", filterClass).eq("school_id", schoolId);
       filteredStudentIds = (assignments ?? []).map(a => a.student_id);
     }
@@ -92,7 +92,7 @@ export default function Students() {
 
     const studentIds = (data ?? []).map(s => s.id);
     if (studentIds.length > 0) {
-      const { data: assigns } = await supabase.from("student_classes")
+      const { data: assigns } = await supabase.from("entrollments")
         .select("student_id, classes(name), sections(name)")
         .eq("school_id", schoolId)
         .in("student_id", studentIds);
@@ -127,8 +127,8 @@ export default function Students() {
     if (editId) {
       const { error } = await supabase.from("students").update(studentPayload).eq("id", editId);
       if (error) { toast.error(getUserFriendlyError(error)); return; }
-      await supabase.from("student_classes").delete().eq("student_id", editId).eq("school_id", schoolId);
-      await supabase.from("student_classes").insert({
+      await supabase.from("entrollments").delete().eq("student_id", editId).eq("school_id", schoolId);
+      await supabase.from("entrollments").insert({
         student_id: editId, class_id: form.class_id, section_id: form.section_id || null,
         academic_year_id: form.academic_year_id, school_id: schoolId,
       });
@@ -152,7 +152,7 @@ export default function Students() {
 
   const handleEdit = async (s: Student) => {
     setEditId(s.id);
-    const { data: assign } = await supabase.from("student_classes")
+    const { data: assign } = await supabase.from("entrollments")
       .select("class_id, section_id, academic_year_id")
       .eq("student_id", s.id).eq("school_id", schoolId).limit(1).single();
     const currentYear = yearsList.find((y: any) => y.is_current);
