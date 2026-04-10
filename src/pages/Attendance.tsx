@@ -100,8 +100,12 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
     if (!classFilter) return;
     setLoading(true);
 
-    let assignQuery = supabase.from("student_classes")
-      .select("student_id").eq("class_id", classFilter).eq("school_id", schoolId);
+        // ተማሪዎቹን ከ entrollments ቴብል አምጣ
+    let assignQuery = supabase.from("entrollments")
+      .select("student_id")
+      .eq("class_id", classFilter)
+      .eq("school_id", schoolId);
+
     if (sectionFilter && sectionFilter !== "all") {
       assignQuery = assignQuery.eq("section_id", sectionFilter);
     }
