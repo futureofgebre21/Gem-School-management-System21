@@ -314,8 +314,12 @@ function AttendanceReportsTab({ schoolId }: { schoolId: string }) {
     if (!classFilter) { toast.error("Select a class"); return; }
     setLoading(true);
 
-    let assignQuery = supabase.from("student_classes").select("student_id")
-      .eq("class_id", classFilter).eq("school_id", schoolId);
+       // ሪፖርት ለማውጣትም መረጃውን ከ entrollments አምጣ
+    let assignQuery = supabase.from("entrollments")
+      .select("student_id")
+      .eq("class_id", classFilter)
+      .eq("school_id", schoolId);
+
     if (sectionFilter && sectionFilter !== "all") assignQuery = assignQuery.eq("section_id", sectionFilter);
     const { data: assigns } = await assignQuery;
     const studentIds = (assigns ?? []).map(a => a.student_id);
