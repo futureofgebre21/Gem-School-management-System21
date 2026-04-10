@@ -150,8 +150,8 @@ export default function ParentPortal() {
                   <TableBody>
                     {attendance.map((a: any, i) => (
                       <TableRow key={i}>
-                        <TableCell>{a.students?.first_name} {a.students?.last_name}</TableCell>
-                        <TableCell>{a.date}</TableCell>
+                       <TableCell>{a.enrollments?.students?.first_name} {a.enrollments?.students?.last_name}</TableCell>
+                        <TableCell>{a.attendance_date}</TableCell>
                         <TableCell>
                           <Badge variant={a.status === "present" ? "default" : a.status === "late" ? "secondary" : "destructive"} className="capitalize">
                             {a.status}
