@@ -322,9 +322,13 @@ function ReportCardsTab({ schoolId }: { schoolId: string }) {
     if (!classFilter || !yearFilter) { toast.error("Select class and year"); return; }
     setLoading(true);
 
-    let assignQuery = supabase.from("student_classes").select("student_id")
-      .eq("class_id", classFilter).eq("school_id", schoolId);
+        let assignQuery = supabase.from("entrollments")
+      .select("student_id")
+      .eq("class_id", classFilter)
+      .eq("academic_year_id", yearFilter)
+      .eq("school_id", schoolId);
     if (sectionFilter && sectionFilter !== "all") assignQuery = assignQuery.eq("section_id", sectionFilter);
+
     const { data: assigns } = await assignQuery;
     const studentIds = (assigns ?? []).map(a => a.student_id);
     if (studentIds.length === 0) { setReport([]); setLoading(false); return; }
