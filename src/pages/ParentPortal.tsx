@@ -129,7 +129,7 @@ export default function ParentPortal() {
                   <TableBody>
                     {grades.map((g: any, i) => (
                       <TableRow key={i}>
-                        <TableCell>{g.students?.first_name} {g.students?.last_name}</TableCell>
+                        <TableCell>{g.enrollments?.students?.first_name} {g.enrollments?.students?.last_name}</TableCell>
                         <TableCell>{g.subjects?.name}</TableCell>
                         <TableCell>{g.term}</TableCell>
                         <TableCell className="font-bold">{g.score}</TableCell>
