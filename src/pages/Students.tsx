@@ -141,6 +141,7 @@ export default function Students() {
         await supabase.from("entrollments").insert({
       student_id: newStudent.id,
       grade_level: studentPayload.class, // ተማሪው የተመዘገበበት ክፍል
+section: studentPayload.section,
       school_year: yearsList.find(y => y.id === form.academic_year_id)?.name || "2018 E.C",
       status: 'active'
     });
