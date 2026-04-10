@@ -110,9 +110,13 @@ export default function Students() {
   const filteredSections = sectionsList.filter(s => s.class_id === form.class_id);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!schoolId) { toast.error("No school assigned"); return; }
-    if (!form.class_id || !form.academic_year_id) { toast.error("Please select a class and academic year"); return; }
+  e.preventDefault();
+  
+  // በጥልቀት የመመርመሪያ መስመር
+  if (!form.class_id || form.class_id === "" || !form.academic_year_id) 
+  }
+  
+ { toast.error("Please select a class and academic year"); return; }
 
         const selectedYear = yearsList.find(y => y.id === form.academic_year_id);
     const selectedClass = classesList.find(c => c.id === form.class_id);
