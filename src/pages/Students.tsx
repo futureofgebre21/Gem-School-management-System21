@@ -138,10 +138,10 @@ export default function Students() {
         .insert({ ...studentPayload, student_id_number: "" }).select("id").single();
       if (error) { toast.error(getUserFriendlyError(error)); return; }
       if (newStudent) {
-        await supabase.from("enrollments").insert({
+        await supabase.from("entrollments").insert({
       student_id: newStudent.id,
       grade_level: studentPayload.class, // ተማሪው የተመዘገበበት ክፍል
-      school_year: yearsList.find(y => y.id === form.academic_year_id)?.name || "2016 E.C",
+      school_year: yearsList.find(y => y.id === form.academic_year_id)?.name || "2018 E.C",
       status: 'active'
     });
   }
