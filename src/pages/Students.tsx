@@ -138,14 +138,29 @@ export default function Students() {
         .insert({ ...studentPayload, student_id_number: "" }).select("id").single();
       if (error) { toast.error(getUserFriendlyError(error)); return; }
       if (newStudent) {
-        await supabase.from("entrollments").insert({
-      student_id: newStudent.id,
-      grade_level: studentPayload.class, // ተማሪው የተመዘገበበት ክፍል
-section: studentPayload.section,
-      school_year: yearsList.find(y => y.id === form.academic_year_id)?.name || "2018 E.C",
-      status: 'active'
-    });
-  }
+  // 1. በትምህርት ቤቱ የተፈጠረውን ዓመተ ምህረት ስም መፈለግ
+  const selectedYear = yearsList.find(y => y.id === form.academic_year_id);
+  // 2. በትምህርት ቤቱ የተፈጠረውን የክፍል ስም መፈለግ
+  const selectedClass = classesList.find(c => c.id === form.class_id);
+  // 3. በትምህርት ቤቱ የተፈጠረውን የሴክሽን ስም መፈለግ
+  const selectedSection = sectionsList.find(s => s.id === form.section_id);
+
+  await supabase.from("entrollments").insert({
+    student_id: newStudent.id,
+    school_id: schoolId,
+    // 🔴 ትምህርት ቤቱ የፈጠረው ዳታ እዚህ ጋር ይገባል
+    grade_level: selectedClass?.name || null,
+    section: selectedSection?.name || null,
+    school_year: selectedYear?.name || null, // 👈 እዚህ ጋር ነው በትክክል የሚቀመጠው
+    
+    // 🔴 ለግንኙነት (Relation) የሚያስፈልጉ IDs
+    class_id: form.class_id,
+    section_id: form.section_id || null,
+    academic_year_id: form.academic_year_id,
+    
+    status: 'active'
+  });
+}
   toast.success("Student registered and enrolled");
 }
     setDialogOpen(false); setForm(emptyForm); setEditId(null); fetchStudents();
