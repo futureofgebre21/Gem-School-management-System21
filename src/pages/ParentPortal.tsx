@@ -24,30 +24,41 @@ export default function ParentPortal() {
       // Get linked students
       const { data: links } = await supabase.from("parent_students")
         .select("student_id, students(id, first_name, last_name, student_id_number, class, section, status)")
-        .eq("parent_user_id", user.id);
+        .eq("parent_id", user.id);
 
       const linkedStudents = (links ?? []).map((l: any) => l.students).filter(Boolean);
       setStudents(linkedStudents);
 
       if (linkedStudents.length > 0) {
-        const studentIds = linkedStudents.map(s => s.id);
+  const studentIds = linkedStudents.map(s => s.id);
 
-        // Get grades
-        const { data: gradeData } = await supabase.from("grades")
-          .select("score, grade, term, subjects(name), students(first_name, last_name)")
-          .in("student_id", studentIds)
-          .order("created_at", { ascending: false })
-          .limit(50);
-        setGrades(gradeData ?? []);
+  // 1. መጀመሪያ የተማሪዎቹን የዘንድሮ ምዝገባ (Enrollments) እንፈልጋለን
+  const { data: enrollments } = await supabase.from("enrollments")
+    .select("id, student_id")
+    .in("student_id", studentIds)
+    .eq("status", "active");
 
-        // Get recent attendance
-        const { data: attData } = await supabase.from("student_attendance")
-          .select("date, status, students(first_name, last_name)")
-          .in("student_id", studentIds)
-          .order("date", { ascending: false })
-          .limit(30);
-        setAttendance(attData ?? []);
-      }
+  const enrollmentIds = (enrollments ?? []).map(e => e.id);
+
+  if (enrollmentIds.length > 0) {
+    // 2. አሁን ውጤቱን በ enrollment_id እንጠራለን
+    const { data: gradeData } = await supabase.from("grades")
+      .select("score, grade, term, subjects(name), enrollments(students(first_name, last_name))")
+      .in("enrollment_id", enrollmentIds)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setGrades(gradeData ?? []);
+
+    // 3. መገኘቱንም በ enrollment_id እና በ attendance_date እንጠራለን
+    const { data: attData } = await supabase.from("student_attendance")
+      .select("attendance_date, status, enrollments(students(first_name, last_name))")
+      .in("enrollment_id", enrollmentIds)
+      .order("attendance_date", { ascending: false })
+      .limit(30);
+    setAttendance(attData ?? []);
+  }
+}
+
 
       // Get announcements for the school
       if (schoolId) {
