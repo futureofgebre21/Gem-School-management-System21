@@ -138,13 +138,15 @@ export default function Students() {
         .insert({ ...studentPayload, student_id_number: "" }).select("id").single();
       if (error) { toast.error(getUserFriendlyError(error)); return; }
       if (newStudent) {
-        await supabase.from("student_classes").insert({
-          student_id: newStudent.id, class_id: form.class_id, section_id: form.section_id || null,
-          academic_year_id: form.academic_year_id, school_id: schoolId,
-        });
-      }
-      toast.success("Student registered");
-    }
+        await supabase.from("enrollments").insert({
+      student_id: newStudent.id,
+      grade_level: studentPayload.class, // ተማሪው የተመዘገበበት ክፍል
+      school_year: yearsList.find(y => y.id === form.academic_year_id)?.name || "2016 E.C",
+      status: 'active'
+    });
+  }
+  toast.success("Student registered and enrolled");
+}
     setDialogOpen(false); setForm(emptyForm); setEditId(null); fetchStudents();
   };
 
