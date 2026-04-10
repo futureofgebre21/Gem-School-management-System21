@@ -307,12 +307,19 @@ export default function Students() {
                       </Select>
                     </div>
                     <div>
-                      <Label>Year *</Label>
-                      <Select value={form.academic_year_id} onValueChange={v => setForm({ ...form, academic_year_id: v })}>
-                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                        <SelectContent>{yearsList.map(y => <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
+  <Label>Year *</Label>
+  <Select 
+    value={form.academic_year_id} 
+    onValueChange={v => setForm({ ...form, academic_year_id: v })}
+  >
+    <SelectTrigger className={!form.academic_year_id ? "border-red-500" : ""}>
+      <SelectValue placeholder="Select Year" />
+    </SelectTrigger>
+    <SelectContent>
+      {yearsList.map(y => <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>)}
+    </SelectContent>
+  </Select>
+</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
