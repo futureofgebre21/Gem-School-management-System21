@@ -281,12 +281,19 @@ export default function Students() {
                   <p className="text-sm font-semibold mb-2">Class Assignment *</p>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <Label>Class *</Label>
-                      <Select value={form.class_id} onValueChange={v => setForm({ ...form, class_id: v, section_id: "" })}>
-                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                        <SelectContent>{classesList.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
+  <Label>Class *</Label>
+  <Select 
+    value={form.class_id} 
+    onValueChange={v => setForm({ ...form, class_id: v, section_id: "" })}
+  >
+    <SelectTrigger className={!form.class_id ? "border-red-500" : ""}>
+      <SelectValue placeholder="Select Class" />
+    </SelectTrigger>
+    <SelectContent>
+      {classesList.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+    </SelectContent>
+  </Select>
+</div>
                     <div>
                       <Label>Section</Label>
                       <Select value={form.section_id} onValueChange={v => setForm({ ...form, section_id: v })}>
