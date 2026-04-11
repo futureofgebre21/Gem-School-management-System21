@@ -111,7 +111,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const [saving, setSaving] = useState(false);
 
 // የተማሪውን ID ከ enrollment_id ጋር የሚያያይዝ State
-const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, string>>({});
+const [entrollmentsMap, setEntrollmentsMap] = useState<Record<string, string>>({});
 
   const maxScore = GRADING_SCALES.find(s => s.value === scale)?.max ?? 100;
 
@@ -177,7 +177,7 @@ const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, string>>({})
       }
     });
 
-    setEnrollmentsMap(map);
+    setEntrollmentsMap(map);
     // ተማሪዎችን በፊደል ተራ ማስተካከል
     finalStudents.sort((a, b) => a.first_name.localeCompare(b.first_name));
     setStudents(finalStudents);
