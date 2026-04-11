@@ -103,9 +103,9 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
     if (!classFilter) return;
     setLoading(true);
 
-        // ተማሪዎቹን ከ entrollments ቴብል አምጣ
+            // የተማሪውን ID፣ የምዝገባ ID እና የትምህርት ዘመኑን ስም አብረህ አምጣ
     let assignQuery = supabase.from("entrollments")
-      .select("student_id")
+      .select("id, student_id, academic_years(name)")
       .eq("class_id", classFilter)
       .eq("school_id", schoolId);
 
@@ -113,7 +113,19 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
       assignQuery = assignQuery.eq("section_id", sectionFilter);
     }
     const { data: assignments } = await assignQuery;
+    
+    // Map መፍጠር (እያንዳንዱ ተማሪ የራሱ የሆነ enrollment_id እና year እንዲኖረው)
+    const map: Record<string, { id: string; year: string }> = {};
+    (assignments ?? []).forEach(a => {
+      map[a.student_id] = {
+        id: a.id,
+        year: (a as any).academic_years?.name || "2026" // Default year if missing
+      };
+    });
+    setEnrollmentsMap(map);
+
     const assignedIds = (assignments ?? []).map(a => a.student_id);
+
 
     if (assignedIds.length === 0) {
       setStudents([]); setAttendance({}); setLoading(false); return;
