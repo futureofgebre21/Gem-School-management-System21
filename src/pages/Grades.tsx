@@ -110,6 +110,9 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+// የተማሪውን ID ከ enrollment_id ጋር የሚያያይዝ State
+const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, string>>({});
+
   const maxScore = GRADING_SCALES.find(s => s.value === scale)?.max ?? 100;
 
   useEffect(() => {
