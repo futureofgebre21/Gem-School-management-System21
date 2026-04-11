@@ -177,7 +177,7 @@ const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, string>>({})
 
   useEffect(() => { fetchStudents(); }, [classFilter, sectionFilter, subjectFilter, yearFilter, term]);
 
-  const handleSave = async () => {
+   const handleSave = async () => {
     setSaving(true);
     try {
       const records = students.filter(s => scores[s.id] !== undefined && scores[s.id] !== "").map(s => {
@@ -186,18 +186,28 @@ const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, string>>({})
           throw new Error(`Invalid score for ${s.first_name} ${s.last_name}: must be 0-${maxScore}`);
         }
         const pct = toPercentage(rawScore, maxScore);
+        
         return {
-          student_id: s.id, subject_id: subjectFilter, class_id: classFilter,
-          academic_year_id: yearFilter, school_id: schoolId, term,
-          score: rawScore, grade: getGradeFromPercentage(pct), recorded_by: user?.id,
+          student_id: s.id, 
+          enrollment_id: enrollmentsMap[s.id], // <-- ይህ ወሳኝ መስመር ተጨመረ!
+          subject_id: subjectFilter, 
+          class_id: classFilter,
+          academic_year_id: yearFilter, 
+          school_id: schoolId, 
+          term,
+          score: rawScore, 
+          grade: getGradeFromPercentage(pct), 
+          recorded_by: user?.id,
         };
       });
+      
       const { error } = await supabase.from("grades").upsert(records, { onConflict: "student_id,subject_id,academic_year_id,term" });
       if (error) toast.error(getUserFriendlyError(error));
       else toast.success("Grades saved");
     } catch (err: any) { toast.error(err.message); }
     setSaving(false);
   };
+
 
   return (
     <div className="space-y-4">
