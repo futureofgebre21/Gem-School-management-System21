@@ -131,65 +131,94 @@ const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, string>>({})
 
   const filteredSections = sections.filter(s => s.class_id === classFilter);
 
-  const fetchStudents = async () => {
+    const fetchStudents = async () => {
     if (!classFilter || !subjectFilter || !yearFilter) return;
     setLoading(true);
 
-        
-    // ዳታውን ከ entrollments ቴብል አምጣ፣ በዓመተ ምህረትም አጣራው
+    // 1. በአንድ ጊዜ ከ entrollments ቴብል ሆነህ ከ students ጋር JOIN አድርገህ አምጣ
     let assignQuery = supabase.from("entrollments")
-      .select("id, student_id") // <-- 'id' (enrollment_id) እዚህ ጋር ተጨመረ!
+      .select(`
+        id, 
+        student_id,
+        students (id, first_name, last_name, student_id_number)
+      `)
       .eq("class_id", classFilter)
       .eq("academic_year_id", yearFilter)
       .eq("school_id", schoolId);
-    if (sectionFilter && sectionFilter !== "all") assignQuery = assignQuery.eq("section_id", sectionFilter);
 
-    const { data: assignments } = await assignQuery;
-    
-    // የተማሪውን ID እና የ Enrollment ID ማገናኘት
-    const map: Record<string, string> = {};
-    (assignments ?? []).forEach(a => {
-      map[a.student_id] = a.id; 
-    });
-    setEnrollmentsMap(map); // ወደ State እናስቀምጠዋለን
-
-    const assignedIds = (assignments ?? []).map(a => a.student_id);
-
-    let studentData: any[] = [];
-    if (assignedIds.length > 0) {
-      const { data } = await supabase.from("students")
-        .select("id, first_name, last_name, student_id_number")
-        .eq("school_id", schoolId).eq("status", "active")
-        .in("id", assignedIds).order("first_name");
-      studentData = data ?? [];
+    if (sectionFilter && sectionFilter !== "all") {
+      assignQuery = assignQuery.eq("section_id", sectionFilter);
     }
-    setStudents(studentData);
 
+    const { data: assignments, error: assignError } = await assignQuery;
+
+    if (assignError || !assignments || assignments.length === 0) {
+      setStudents([]); 
+      setScores({}); 
+      setEntrollmentsMap({});
+      setLoading(false); 
+      return;
+    }
+
+    // 2. ዳታውን ለ UI እንዲመች አዘጋጅ (Map አድርግ)
+    const map: Record<string, string> = {};
+    const finalStudents: any[] = [];
+
+    assignments.forEach((a: any) => {
+      if (a.students) { // ተማሪው በትክክል ከተገኘ
+        map[a.student_id] = a.id; // የተማሪውን ID ከ Enrollment ID ጋር ማያያዝ
+        
+        finalStudents.push({
+          id: a.students.id,
+          first_name: a.students.first_name,
+          last_name: a.students.last_name,
+          student_id_number: a.students.student_id_number
+        });
+      }
+    });
+
+    setEnrollmentsMap(map);
+    // ተማሪዎችን በፊደል ተራ ማስተካከል
+    finalStudents.sort((a, b) => a.first_name.localeCompare(b.first_name));
+    setStudents(finalStudents);
+
+    // 3. የዛሬውን (ወይም የነበረውን) grade ካለ አምጣ
     const { data: existing } = await supabase.from("grades")
       .select("student_id, score")
-      .eq("class_id", classFilter).eq("subject_id", subjectFilter)
-      .eq("academic_year_id", yearFilter).eq("term", term).eq("school_id", schoolId);
+      .eq("class_id", classFilter)
+      .eq("subject_id", subjectFilter)
+      .eq("academic_year_id", yearFilter)
+      .eq("term", term)
+      .eq("school_id", schoolId);
+
     const sc: Record<string, string> = {};
-    (existing ?? []).forEach(g => { sc[g.student_id] = String(g.score ?? ""); });
+    (existing ?? []).forEach(g => { 
+      sc[g.student_id] = String(g.score ?? ""); 
+    });
+    
     setScores(sc);
     setLoading(false);
   };
 
+
   useEffect(() => { fetchStudents(); }, [classFilter, sectionFilter, subjectFilter, yearFilter, term]);
 
-   const handleSave = async () => {
+     const handleSave = async () => {
     setSaving(true);
     try {
+      // 4. handleSave ውስጥ የ entrollment_id-ውን መጠቀም
       const records = students.filter(s => scores[s.id] !== undefined && scores[s.id] !== "").map(s => {
         const rawScore = parseFloat(scores[s.id]);
+        
         if (isNaN(rawScore) || rawScore < 0 || rawScore > maxScore) {
           throw new Error(`Invalid score for ${s.first_name} ${s.last_name}: must be 0-${maxScore}`);
         }
-        const pct = toPercentage(rawScore, maxScore);
         
+        const pct = toPercentage(rawScore, maxScore);
+
         return {
           student_id: s.id, 
-          enrollment_id: enrollmentsMap[s.id], // <-- ይህ ወሳኝ መስመር ተጨመረ!
+          entrollment_id: entrollmentsMap[s.id], //
           subject_id: subjectFilter, 
           class_id: classFilter,
           academic_year_id: yearFilter, 
@@ -200,13 +229,30 @@ const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, string>>({})
           recorded_by: user?.id,
         };
       });
+
+      if (records.length === 0) {
+        toast.info("No grades to save.");
+        setSaving(false);
+        return;
+      }
+
+      const { error } = await supabase.from("grades").upsert(records, { 
+        onConflict: "student_id,subject_id,academic_year_id,term" 
+      });
       
-      const { error } = await supabase.from("grades").upsert(records, { onConflict: "student_id,subject_id,academic_year_id,term" });
-      if (error) toast.error(getUserFriendlyError(error));
-      else toast.success("Grades saved");
-    } catch (err: any) { toast.error(err.message); }
+      if (error) {
+        console.error("Grade Save Error:", error);
+        toast.error(getUserFriendlyError(error));
+      } else {
+        toast.success(`Grades saved successfully for ${records.length} students`);
+      }
+      
+    } catch (err: any) { 
+      toast.error(err.message); 
+    }
     setSaving(false);
   };
+
 
 
   return (
