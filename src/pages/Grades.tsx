@@ -135,15 +135,24 @@ const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, string>>({})
     if (!classFilter || !subjectFilter || !yearFilter) return;
     setLoading(true);
 
-        // ዳታውን ከ entrollments ቴብል አምጣ፣ በዓመተ ምህረትም አጣራው
+        
+    // ዳታውን ከ entrollments ቴብል አምጣ፣ በዓመተ ምህረትም አጣራው
     let assignQuery = supabase.from("entrollments")
-      .select("student_id")
+      .select("id, student_id") // <-- 'id' (enrollment_id) እዚህ ጋር ተጨመረ!
       .eq("class_id", classFilter)
       .eq("academic_year_id", yearFilter)
       .eq("school_id", schoolId);
     if (sectionFilter && sectionFilter !== "all") assignQuery = assignQuery.eq("section_id", sectionFilter);
 
     const { data: assignments } = await assignQuery;
+    
+    // የተማሪውን ID እና የ Enrollment ID ማገናኘት
+    const map: Record<string, string> = {};
+    (assignments ?? []).forEach(a => {
+      map[a.student_id] = a.id; 
+    });
+    setEnrollmentsMap(map); // ወደ State እናስቀምጠዋለን
+
     const assignedIds = (assignments ?? []).map(a => a.student_id);
 
     let studentData: any[] = [];
