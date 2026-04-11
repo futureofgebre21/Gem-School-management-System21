@@ -87,7 +87,7 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   // የተማሪውን ID ከ entrollment_id እና ከ school_year ጋር ለማያያዝ
-  const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, { id: string; year: string }>>({});
+  const [entrollmentsMap, setEntrollmentsMap] = useState<Record<string, { id: string; year: string }>>({});
 
 
   useEffect(() => {
