@@ -86,6 +86,9 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
   const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // የተማሪውን ID ከ entrollment_id እና ከ school_year ጋር ለማያያዝ
+  const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, { id: string; year: string }>>({});
+
 
   useEffect(() => {
     supabase.from("classes").select("id, name").eq("school_id", schoolId).order("name")
