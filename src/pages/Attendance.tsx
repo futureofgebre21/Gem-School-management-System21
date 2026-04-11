@@ -123,7 +123,7 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
     if (assignError || !assignments || assignments.length === 0) {
       setStudents([]); 
       setAttendance({}); 
-      setEnrollmentsMap({});
+      setEntrollmentsMap({});
       setLoading(false); 
       return;
     }
@@ -149,7 +149,7 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
       }
     });
 
-    setEnrollmentsMap(map);
+    setEntrollmentsMap(map);
     // ተማሪዎቹን በፊደል ተራ (Alphabetically) አስተካክሎ ለ UI መስጠት
     finalStudents.sort((a, b) => a.first_name.localeCompare(b.first_name));
     setStudents(finalStudents);
@@ -179,14 +179,14 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
     const handleSave = async () => {
     setSaving(true);
     
-    // 4. handleSave ውስጥ የ enrollment_id-ውን መጠቀም
+    // 4. handleSave ውስጥ የ entrollment_id-ውን መጠቀም
     const records = Object.entries(attendance).map(([student_id, status]) => {
-      const enrollmentInfo = enrollmentsMap[student_id]; // Map ካደረግነው ላይ መረጃውን መውሰድ
+      const entrollmentInfo = entrollmentsMap[student_id]; // Map ካደረግነው ላይ መረጃውን መውሰድ
 
       return {
         student_id, 
-        entrollment_id: enrollmentInfo?.id, // ከ entrollments ቴብል ያገኘነው ትክክለኛው ID
-        school_year: enrollmentInfo?.year,  // የትምህርት ዘመኑ
+        entrollment_id: entrollmentInfo?.id, // ከ entrollments ቴብል ያገኘነው ትክክለኛው ID
+        school_year: entrollmentInfo?.year,  // የትምህርት ዘመኑ
         class_id: classFilter, 
         school_id: schoolId, 
         date, 
