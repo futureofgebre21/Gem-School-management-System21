@@ -99,77 +99,115 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
 
   const filteredSections = sections.filter(s => s.class_id === classFilter);
 
-  const fetchStudents = async () => {
+    const fetchStudents = async () => {
     if (!classFilter) return;
     setLoading(true);
 
-            // የተማሪውን ID፣ የምዝገባ ID እና የትምህርት ዘመኑን ስም አብረህ አምጣ
+    // 1. ተማሪዎችን ከ entrollments ቴብል ሆነህ ከ students ጋር JOIN አድርገህ አምጣ
     let assignQuery = supabase.from("entrollments")
-      .select("id, student_id, academic_years(name)")
+      .select(`
+        id, 
+        student_id, 
+        academic_years(name),
+        students (id, first_name, last_name, student_id_number)
+      `)
       .eq("class_id", classFilter)
       .eq("school_id", schoolId);
 
     if (sectionFilter && sectionFilter !== "all") {
       assignQuery = assignQuery.eq("section_id", sectionFilter);
     }
-    const { data: assignments } = await assignQuery;
     
-    // Map መፍጠር (እያንዳንዱ ተማሪ የራሱ የሆነ enrollment_id እና year እንዲኖረው)
-    const map: Record<string, { id: string; year: string }> = {};
-    (assignments ?? []).forEach(a => {
-      map[a.student_id] = {
-        id: a.id,
-        year: (a as any).academic_years?.name || "2026" // Default year if missing
-      };
-    });
-    setEnrollmentsMap(map);
+    const { data: assignments, error: assignError } = await assignQuery;
 
-    const assignedIds = (assignments ?? []).map(a => a.student_id);
-
-
-    if (assignedIds.length === 0) {
-      setStudents([]); setAttendance({}); setLoading(false); return;
+    if (assignError || !assignments || assignments.length === 0) {
+      setStudents([]); 
+      setAttendance({}); 
+      setEnrollmentsMap({});
+      setLoading(false); 
+      return;
     }
 
-    const { data: studentData } = await supabase.from("students")
-      .select("id, first_name, last_name, student_id_number")
-      .eq("school_id", schoolId).eq("status", "active")
-      .in("id", assignedIds).order("first_name");
+    // 2. ዳታውን ለ UI እንዲመች አዘጋጅ (Map አድርግ)
+    const map: Record<string, { id: string; year: string }> = {};
+    const finalStudents: any[] = [];
 
-    const finalStudents = studentData ?? [];
+    assignments.forEach((a: any) => {
+      if (a.students) { // ተማሪው ዳታቤዝ ላይ በትክክል ከተገኘ ብቻ
+        // ለ handleSave እንዲመች enrollment ID እና year መያዝ
+        map[a.student_id] = {
+          id: a.id, // የምዝገባው (entrollment) መታወቂያ
+          year: a.academic_years?.name || "2026"
+        };
+        // ለ Table (UI) እንዲመች የተማሪውን መረጃ ማዘጋጀት
+        finalStudents.push({
+          id: a.students.id,
+          first_name: a.students.first_name,
+          last_name: a.students.last_name,
+          student_id_number: a.students.student_id_number
+        });
+      }
+    });
+
+    setEnrollmentsMap(map);
+    // ተማሪዎቹን በፊደል ተራ (Alphabetically) አስተካክሎ ለ UI መስጠት
+    finalStudents.sort((a, b) => a.first_name.localeCompare(b.first_name));
     setStudents(finalStudents);
 
+    // 3. የዛሬውን attendance ካለ አምጣ
     const { data: existing } = await supabase.from("student_attendance")
-      .select("student_id, status").eq("school_id", schoolId).eq("class_id", classFilter).eq("date", date);
+      .select("student_id, status")
+      .eq("school_id", schoolId)
+      .eq("class_id", classFilter)
+      .eq("date", date);
 
     const att: Record<string, string> = {};
     (existing ?? []).forEach(a => { att[a.student_id] = a.status; });
-    finalStudents.forEach(s => { if (!att[s.id]) att[s.id] = "present"; });
+    
+    // Attendance ላልተሞላላቸው ተማሪዎች 'present' (✅) ነባሪ (Default) አድርግ
+    finalStudents.forEach(s => { 
+      if (!att[s.id]) att[s.id] = "present"; 
+    });
+    
     setAttendance(att);
     setLoading(false);
   };
 
+
   useEffect(() => { fetchStudents(); }, [classFilter, sectionFilter, date]);
 
-  const handleSave = async () => {
+    const handleSave = async () => {
     setSaving(true);
-        const records = Object.entries(attendance).map(([student_id, status]) => ({
-      student_id, 
-      entrollment_id: enrollmentsMap[student_id]?.id, // አዲሱ ግዴታ (NOT NULL)
-      school_year: enrollmentsMap[student_id]?.year,  // አዲሱ ግዴታ (NOT NULL)
-      class_id: classFilter, 
-      school_id: schoolId, 
-      date, 
-      status,
-      recorded_by: user?.id, 
-      section_id: (sectionFilter && sectionFilter !== "all") ? sectionFilter : null,
-    }));
+    
+    // 4. handleSave ውስጥ የ enrollment_id-ውን መጠቀም
+    const records = Object.entries(attendance).map(([student_id, status]) => {
+      const enrollmentInfo = enrollmentsMap[student_id]; // Map ካደረግነው ላይ መረጃውን መውሰድ
+
+      return {
+        student_id, 
+        entrollment_id: enrollmentInfo?.id, // ከ entrollments ቴብል ያገኘነው ትክክለኛው ID
+        school_year: enrollmentInfo?.year,  // የትምህርት ዘመኑ
+        class_id: classFilter, 
+        school_id: schoolId, 
+        date, 
+        status,
+        recorded_by: user?.id, 
+        section_id: (sectionFilter && sectionFilter !== "all") ? sectionFilter : null,
+      };
+    });
 
     const { error } = await supabase.from("student_attendance").upsert(records, { onConflict: "student_id,date" });
-    if (error) toast.error(getUserFriendlyError(error));
-    else toast.success(`Attendance saved for ${records.length} students`);
+    
+    if (error) {
+      console.error("Save Error:", error); // በ console ላይ ምን እንደተፈጠረ ለማየት
+      toast.error(getUserFriendlyError(error));
+    } else {
+      toast.success(`Attendance saved for ${records.length} students`);
+    }
+    
     setSaving(false);
   };
+
 
   const stats = {
     present: Object.values(attendance).filter(s => s === "present").length,
