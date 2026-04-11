@@ -153,10 +153,18 @@ function StudentAttendanceTab({ schoolId }: { schoolId: string }) {
 
   const handleSave = async () => {
     setSaving(true);
-    const records = Object.entries(attendance).map(([student_id, status]) => ({
-      student_id, class_id: classFilter, school_id: schoolId, date, status,
-      recorded_by: user?.id, section_id: (sectionFilter && sectionFilter !== "all") ? sectionFilter : null,
+        const records = Object.entries(attendance).map(([student_id, status]) => ({
+      student_id, 
+      entrollment_id: enrollmentsMap[student_id]?.id, // አዲሱ ግዴታ (NOT NULL)
+      school_year: enrollmentsMap[student_id]?.year,  // አዲሱ ግዴታ (NOT NULL)
+      class_id: classFilter, 
+      school_id: schoolId, 
+      date, 
+      status,
+      recorded_by: user?.id, 
+      section_id: (sectionFilter && sectionFilter !== "all") ? sectionFilter : null,
     }));
+
     const { error } = await supabase.from("student_attendance").upsert(records, { onConflict: "student_id,date" });
     if (error) toast.error(getUserFriendlyError(error));
     else toast.success(`Attendance saved for ${records.length} students`);
