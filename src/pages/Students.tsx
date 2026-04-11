@@ -114,9 +114,9 @@ export default function Students() {
   
   // በጥልቀት የመመርመሪያ መስመር
   if (!form.class_id || form.class_id === "" || !form.academic_year_id) 
-  }
   
- { toast.error("Please select a class and academic year"); return; }
+ { toast.error("Please select a class and academic year"); return;
+ }
 
         const selectedYear = yearsList.find(y => y.id === form.academic_year_id);
     const selectedClass = classesList.find(c => c.id === form.class_id);
