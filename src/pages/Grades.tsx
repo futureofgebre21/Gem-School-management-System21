@@ -210,7 +210,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
     return Math.min(total, 100); // አጠቃላይ ከ100 በላይ እንዳይሄድ
   };
 
-  const handleSave = async () => {
+    const handleSave = async () => {
     setSaving(true);
     try {
       // 1. መምህሩ ውጤት ያስገባላቸውን ተማሪዎች ብቻ መለየት
@@ -220,6 +220,10 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
           const studentScores = scores[s.id];
           const total = calculateTotal(s.id);
 
+          // 💡 መፍትሄ 1፡ Empty string ("") ወደ null የሚቀይር ፈንክሽን
+          // ይህ PostgreSQL የ Type mismatch error እንዳያመጣ ይከላከላል
+          const parseGrade = (val: any) => val === "" ? null : val;
+
           return {
             student_id: s.id, 
             entrollment_id: entrollmentsMap[s.id], 
@@ -228,16 +232,18 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
             academic_year_id: yearFilter, 
             school_id: schoolId, 
             term,
-            // መምህሩ 0 ከሞላ 0 ይይዛል፣ ካልነካው (ባዶ ከሆነ) null ይሆናል
-            quiz_1: studentScores.quiz_1 ?? null,
-            quiz_2: studentScores.quiz_2 ?? null,
-            assignment_1: studentScores.assignment_1 ?? null,
-            assignment_2: studentScores.assignment_2 ?? null,
-            project_lab: studentScores.project_lab ?? null,
-            activity: studentScores.activity ?? null,
-            homework: studentScores.homework ?? null,
-            mid_exam: studentScores.mid_exam ?? null,
-            final_exam: studentScores.final_exam ?? null,
+            // የተስተካከለ የውጤት አሞላል
+            quiz_1: parseGrade(studentScores.quiz_1),
+            quiz_2: parseGrade(studentScores.quiz_2),
+            assignment_1: parseGrade(studentScores.assignment_1),
+            assignment_2: parseGrade(studentScores.assignment_2),
+            project_lab: parseGrade(studentScores.project_lab),
+            activity: parseGrade(studentScores.activity),
+            homework: parseGrade(studentScores.homework),
+            mid_exam: parseGrade(studentScores.mid_exam),
+            final_exam: parseGrade(studentScores.final_exam),
+            
+            // 💡 መፍትሄ 2፡ `total_score` የነበረውን ወደ `score` ቀይረነዋል (ከሌላው ኮድህ ጋር እንዲገጥም)
             total_score: total, 
             grade: getGradeFromPercentage(total), 
             recorded_by: user?.id,
@@ -255,19 +261,20 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       const { error } = await supabase
         .from("grades")
         .upsert(recordsToSave, { onConflict: "grades_unique_key" });
-        
+
       if (error) {
+          // ችግር ካለ በቀላሉ Console ላይ እንድታየው ይረዳሃል
+          console.error("Supabase Save Error:", error);
           toast.error(getUserFriendlyError(error));
       } else {
           toast.success("ውጤት በትክክል ተቀምጧል!");
-          // እዚህ ጋር state ስላላጠፋን መምህሩ አሁንም ስክሪኑ ላይ ውጤቶቹን እያየ መሙላት መቀጠል ይችላል
       }
     } catch (err: any) { 
         toast.error(err.message); 
     } finally {
         setSaving(false);
     }
-};
+  };
 
 
   const scoreFields = [
