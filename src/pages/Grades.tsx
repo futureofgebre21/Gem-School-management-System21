@@ -213,39 +213,62 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const records = students.map(s => {
-        const studentScores = scores[s.id] || {};
-        const total = calculateTotal(s.id);
-        
-        return {
-          student_id: s.id, 
-          entrollment_id: entrollmentsMap[s.id], 
-          subject_id: subjectFilter, 
-          class_id: classFilter,
-          academic_year_id: yearFilter, 
-          school_id: schoolId, 
-          term,
-          quiz_1: studentScores.quiz_1 || 0,
-          quiz_2: studentScores.quiz_2 || 0,
-          assignment_1: studentScores.assignment_1 || 0,
-          assignment_2: studentScores.assignment_2 || 0,
-          project_lab: studentScores.project_lab || 0,
-          activity: studentScores.activity || 0,
-          homework: studentScores.homework || 0,
-          mid_exam: studentScores.mid_exam || 0,
-          final_exam: studentScores.final_exam || 0,
-          total_score: total, // አዲሱ የTotal ኮለም
-          grade: getGradeFromPercentage(total), 
-          recorded_by: user?.id,
-        };
-      });
+      // 1. መምህሩ ውጤት ያስገባላቸውን ተማሪዎች ብቻ መለየት
+      const recordsToSave = students
+        .filter(s => scores[s.id] && Object.keys(scores[s.id]).length > 0)
+        .map(s => {
+          const studentScores = scores[s.id];
+          const total = calculateTotal(s.id);
 
-      const { error } = await supabase.from("grades").upsert(records, { onConflict: "student_id,subject_id,academic_year_id,term" });
-      if (error) toast.error(getUserFriendlyError(error));
-      else toast.success("Detailed grades saved successfully!");
-    } catch (err: any) { toast.error(err.message); }
-    setSaving(false);
-  };
+          return {
+            student_id: s.id, 
+            entrollment_id: entrollmentsMap[s.id], 
+            subject_id: subjectFilter, 
+            class_id: classFilter,
+            academic_year_id: yearFilter, 
+            school_id: schoolId, 
+            term,
+            // መምህሩ 0 ከሞላ 0 ይይዛል፣ ካልነካው (ባዶ ከሆነ) null ይሆናል
+            quiz_1: studentScores.quiz_1 ?? null,
+            quiz_2: studentScores.quiz_2 ?? null,
+            assignment_1: studentScores.assignment_1 ?? null,
+            assignment_2: studentScores.assignment_2 ?? null,
+            project_lab: studentScores.project_lab ?? null,
+            activity: studentScores.activity ?? null,
+            homework: studentScores.homework ?? null,
+            mid_exam: studentScores.mid_exam ?? null,
+            final_exam: studentScores.final_exam ?? null,
+            total_score: total, 
+            grade: getGradeFromPercentage(total), 
+            recorded_by: user?.id,
+          };
+        });
+
+      // 2. የተሞላ አዲስ ዳታ ከሌለ ዝም ብሎ ወደ ዳታቤዝ እንዳይልከው ማገጃ
+      if (recordsToSave.length === 0) {
+        toast.info("ምንም የተሞላ አዲስ ውጤት የለም!");
+        setSaving(false);
+        return;
+      }
+
+      // 3. የተለዩትን ተማሪዎች ብቻ Save/Update ማድረግ
+      const { error } = await supabase
+        .from("grades")
+        .upsert(recordsToSave, { onConflict: "student_id,subject_id,academic_year_id,term" });
+        
+      if (error) {
+          toast.error(getUserFriendlyError(error));
+      } else {
+          toast.success("ውጤት በትክክል ተቀምጧል!");
+          // እዚህ ጋር state ስላላጠፋን መምህሩ አሁንም ስክሪኑ ላይ ውጤቶቹን እያየ መሙላት መቀጠል ይችላል
+      }
+    } catch (err: any) { 
+        toast.error(err.message); 
+    } finally {
+        setSaving(false);
+    }
+};
+
 
   const scoreFields = [
     { key: "quiz_1", label: "Q1" }, { key: "quiz_2", label: "Q2" },
