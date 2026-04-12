@@ -100,20 +100,24 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const [subjectFilter, setSubjectFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [term, setTerm] = useState("First Term");
-  const [scale, setScale] = useState("100");
   const [classes, setClasses] = useState<any[]>([]);
   const [sections, setSections] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [years, setYears] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
-  const [scores, setScores] = useState<Record<string, string>>({});
+  
+  // 1. የየአንዳንዱ Assessment ከፍተኛ ውጤት (Max Scores) state
+  const [maxScores, setMaxScores] = useState({
+    quiz_1: 5, quiz_2: 5, assignment_1: 10, assignment_2: 10,
+    project_lab: 10, activity: 5, homework: 5, mid_exam: 20, final_exam: 30
+  });
+
+  // 2. የተማሪዎች ዝርዝር ውጤት state
+  const [scores, setScores] = useState<Record<string, any>>({});
+  const [entrollmentsMap, setEntrollmentsMap] = useState<Record<string, string>>({});
+  
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-// የተማሪውን ID ከ enrollment_id ጋር የሚያያይዝ State
-const [entrollmentsMap, setEntrollmentsMap] = useState<Record<string, string>>({});
-
-  const maxScore = GRADING_SCALES.find(s => s.value === scale)?.max ?? 100;
 
   useEffect(() => {
     Promise.all([
@@ -131,133 +135,131 @@ const [entrollmentsMap, setEntrollmentsMap] = useState<Record<string, string>>({
 
   const filteredSections = sections.filter(s => s.class_id === classFilter);
 
-    const fetchStudents = async () => {
+  const fetchStudents = async () => {
     if (!classFilter || !subjectFilter || !yearFilter) return;
     setLoading(true);
 
-    // 1. በአንድ ጊዜ ከ entrollments ቴብል ሆነህ ከ students ጋር JOIN አድርገህ አምጣ
     let assignQuery = supabase.from("entrollments")
-      .select(`
-        id, 
-        student_id,
-        students (id, first_name, last_name, student_id_number)
-      `)
+      .select("id, student_id, students (id, first_name, last_name, student_id_number)")
       .eq("class_id", classFilter)
       .eq("academic_year_id", yearFilter)
       .eq("school_id", schoolId);
+      
+    if (sectionFilter && sectionFilter !== "all") assignQuery = assignQuery.eq("section_id", sectionFilter);
 
-    if (sectionFilter && sectionFilter !== "all") {
-      assignQuery = assignQuery.eq("section_id", sectionFilter);
-    }
+    const { data: assignments } = await assignQuery;
 
-    const { data: assignments, error: assignError } = await assignQuery;
-
-    if (assignError || !assignments || assignments.length === 0) {
-      setStudents([]); 
-      setScores({}); 
-      setEntrollmentsMap({});
-      setLoading(false); 
-      return;
-    }
-
-    // 2. ዳታውን ለ UI እንዲመች አዘጋጅ (Map አድርግ)
     const map: Record<string, string> = {};
     const finalStudents: any[] = [];
 
-    assignments.forEach((a: any) => {
-      if (a.students) { // ተማሪው በትክክል ከተገኘ
-        map[a.student_id] = a.id; // የተማሪውን ID ከ Enrollment ID ጋር ማያያዝ
-        
-        finalStudents.push({
-          id: a.students.id,
-          first_name: a.students.first_name,
-          last_name: a.students.last_name,
-          student_id_number: a.students.student_id_number
-        });
+    (assignments ?? []).forEach((a: any) => {
+      if (a.students) {
+        map[a.student_id] = a.id; 
+        finalStudents.push(a.students);
       }
     });
 
     setEntrollmentsMap(map);
-    // ተማሪዎችን በፊደል ተራ ማስተካከል
     finalStudents.sort((a, b) => a.first_name.localeCompare(b.first_name));
     setStudents(finalStudents);
 
-    // 3. የዛሬውን (ወይም የነበረውን) grade ካለ አምጣ
+    // የነበረውን ዝርዝር ውጤት ከዳታቤዝ ማምጣት
     const { data: existing } = await supabase.from("grades")
-      .select("student_id, score")
-      .eq("class_id", classFilter)
-      .eq("subject_id", subjectFilter)
-      .eq("academic_year_id", yearFilter)
-      .eq("term", term)
-      .eq("school_id", schoolId);
-
-    const sc: Record<string, string> = {};
+      .select("*")
+      .eq("class_id", classFilter).eq("subject_id", subjectFilter)
+      .eq("academic_year_id", yearFilter).eq("term", term).eq("school_id", schoolId);
+      
+    const sc: Record<string, any> = {};
     (existing ?? []).forEach(g => { 
-      sc[g.student_id] = String(g.score ?? ""); 
+      sc[g.student_id] = {
+        quiz_1: g.quiz_1 ?? "", quiz_2: g.quiz_2 ?? "",
+        assignment_1: g.assignment_1 ?? "", assignment_2: g.assignment_2 ?? "",
+        project_lab: g.project_lab ?? "", activity: g.activity ?? "",
+        homework: g.homework ?? "", mid_exam: g.mid_exam ?? "", final_exam: g.final_exam ?? ""
+      }; 
     });
-    
     setScores(sc);
     setLoading(false);
   };
 
-
   useEffect(() => { fetchStudents(); }, [classFilter, sectionFilter, subjectFilter, yearFilter, term]);
 
-     const handleSave = async () => {
+  // 3. ውጤት ሲሞላ የሚሰራው Logic (Negative እና ከ Max በላይ እንዳይሆን ይቆጣጠራል)
+  const handleScoreChange = (studentId: string, field: string, value: string) => {
+    let numValue = value === "" ? "" : parseFloat(value);
+    const maxAllowed = (maxScores as any)[field];
+
+    if (typeof numValue === "number") {
+      if (numValue < 0) numValue = 0; // Negative መከልከል
+      if (numValue > maxAllowed) numValue = maxAllowed; // ከ Max በላይ እንዳይሄድ መከልከል
+    }
+
+    setScores(prev => ({
+      ...prev,
+      [studentId]: { ...(prev[studentId] || {}), [field]: numValue }
+    }));
+  };
+
+  // 4. Total ደምሮ የሚያወጣ ፈንክሽን (እየደመረ ይሄዳል)
+  const calculateTotal = (studentId: string) => {
+    const s = scores[studentId] || {};
+    let total = 0;
+    Object.keys(maxScores).forEach(key => {
+      total += Number(s[key]) || 0;
+    });
+    return Math.min(total, 100); // አጠቃላይ ከ100 በላይ እንዳይሄድ
+  };
+
+  const handleSave = async () => {
     setSaving(true);
     try {
-      // 4. handleSave ውስጥ የ entrollment_id-ውን መጠቀም
-      const records = students.filter(s => scores[s.id] !== undefined && scores[s.id] !== "").map(s => {
-        const rawScore = parseFloat(scores[s.id]);
+      const records = students.map(s => {
+        const studentScores = scores[s.id] || {};
+        const total = calculateTotal(s.id);
         
-        if (isNaN(rawScore) || rawScore < 0 || rawScore > maxScore) {
-          throw new Error(`Invalid score for ${s.first_name} ${s.last_name}: must be 0-${maxScore}`);
-        }
-        
-        const pct = toPercentage(rawScore, maxScore);
-
         return {
           student_id: s.id, 
-          entrollment_id: entrollmentsMap[s.id], //
+          entrollment_id: entrollmentsMap[s.id], 
           subject_id: subjectFilter, 
           class_id: classFilter,
           academic_year_id: yearFilter, 
           school_id: schoolId, 
           term,
-          score: rawScore, 
-          grade: getGradeFromPercentage(pct), 
+          quiz_1: studentScores.quiz_1 || 0,
+          quiz_2: studentScores.quiz_2 || 0,
+          assignment_1: studentScores.assignment_1 || 0,
+          assignment_2: studentScores.assignment_2 || 0,
+          project_lab: studentScores.project_lab || 0,
+          activity: studentScores.activity || 0,
+          homework: studentScores.homework || 0,
+          mid_exam: studentScores.mid_exam || 0,
+          final_exam: studentScores.final_exam || 0,
+          total_score: total, // አዲሱ የTotal ኮለም
+          grade: getGradeFromPercentage(total), 
           recorded_by: user?.id,
         };
       });
 
-      if (records.length === 0) {
-        toast.info("No grades to save.");
-        setSaving(false);
-        return;
-      }
-
-      const { error } = await supabase.from("grades").upsert(records, { 
-        onConflict: "student_id,subject_id,academic_year_id,term" 
-      });
-      
-      if (error) {
-        console.error("Grade Save Error:", error);
-        toast.error(getUserFriendlyError(error));
-      } else {
-        toast.success(`Grades saved successfully for ${records.length} students`);
-      }
-      
-    } catch (err: any) { 
-      toast.error(err.message); 
-    }
+      const { error } = await supabase.from("grades").upsert(records, { onConflict: "student_id,subject_id,academic_year_id,term" });
+      if (error) toast.error(getUserFriendlyError(error));
+      else toast.success("Detailed grades saved successfully!");
+    } catch (err: any) { toast.error(err.message); }
     setSaving(false);
   };
 
+  const scoreFields = [
+    { key: "quiz_1", label: "Q1" }, { key: "quiz_2", label: "Q2" },
+    { key: "assignment_1", label: "Ass 1" }, { key: "assignment_2", label: "Ass 2" },
+    { key: "project_lab", label: "Proj/Lab" }, { key: "activity", label: "Act" },
+    { key: "homework", label: "HW" }, { key: "mid_exam", label: "Mid" }, { key: "final_exam", label: "Final" }
+  ];
 
+  const totalMax = Object.values(maxScores).reduce((a, b) => a + b, 0);
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* Filters Section */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
           <Label>Class *</Label>
           <Select value={classFilter} onValueChange={v => { setClassFilter(v); setSectionFilter(""); }}>
@@ -300,19 +302,20 @@ const [entrollmentsMap, setEntrollmentsMap] = useState<Record<string, string>>({
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label>Scale</Label>
-          <Select value={scale} onValueChange={setScale}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{GRADING_SCALES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
       </div>
 
       {students.length > 0 && (
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">Grading: <span className="font-semibold text-foreground">Out of {maxScore}</span> • {students.length} students</p>
-          <Button onClick={handleSave} disabled={saving}><Save className="w-4 h-4 mr-1" />{saving ? "Saving..." : "Save Grades"}</Button>
+        <div className="flex justify-between items-center bg-muted/50 p-3 rounded-lg">
+          <div className="text-sm">
+            <span className="font-bold text-primary">Total Max Score Setup: </span> 
+            <span className={totalMax !== 100 ? "text-red-500 font-bold" : "text-green-600 font-bold"}>
+              {totalMax}/100%
+            </span>
+            {totalMax !== 100 && <span className="ml-2 text-xs text-red-500">(Must equal exactly 100)</span>}
+          </div>
+          <Button onClick={handleSave} disabled={saving || totalMax !== 100}>
+            <Save className="w-4 h-4 mr-1" />{saving ? "Saving..." : "Save All Grades"}
+          </Button>
         </div>
       )}
 
@@ -321,47 +324,68 @@ const [entrollmentsMap, setEntrollmentsMap] = useState<Record<string, string>>({
       ) : loading ? (
         <p className="text-center py-8 text-muted-foreground">Loading...</p>
       ) : students.length === 0 ? (
-        <p className="text-center py-8 text-muted-foreground">No students assigned to this class{sectionFilter && sectionFilter !== "all" ? " and section" : ""}</p>
+        <p className="text-center py-8 text-muted-foreground">No students assigned to this class.</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead><TableHead>Name</TableHead>
-              <TableHead>Score (/{maxScore})</TableHead><TableHead>%</TableHead><TableHead>Grade</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {students.map(s => {
-              const score = scores[s.id] ?? "";
-              const numScore = parseFloat(score);
-              const pct = !isNaN(numScore) && score !== "" ? toPercentage(numScore, maxScore) : NaN;
-              return (
-                <TableRow key={s.id}>
-                  <TableCell className="font-mono text-sm">{s.student_id_number}</TableCell>
-                  <TableCell className="font-medium">{s.first_name} {s.last_name}</TableCell>
-                  <TableCell>
-                    <Input type="number" min="0" max={maxScore} className="w-20" value={score}
-                      onChange={e => {
-                        const val = e.target.value;
-                        if (val === "" || (parseFloat(val) >= 0 && parseFloat(val) <= maxScore)) {
-                          setScores({ ...scores, [s.id]: val });
-                        }
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>{!isNaN(pct) ? <span className="font-medium">{pct.toFixed(1)}%</span> : "-"}</TableCell>
-                  <TableCell>
-                    {!isNaN(pct) ? <Badge variant={pct >= 50 ? "default" : "destructive"}>{getGradeFromPercentage(pct)}</Badge> : "-"}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto w-full border rounded-md">
+          <Table className="w-full min-w-[1000px]">
+            <TableHeader className="bg-muted">
+              <TableRow>
+                <TableHead className="w-[150px] sticky left-0 bg-muted">Student Name</TableHead>
+                {/* የ Max Score ማስተካከያዎች በ Header ላይ */}
+                {scoreFields.map(field => (
+                  <TableHead key={field.key} className="text-center px-1">
+                    <div className="text-xs font-semibold mb-1">{field.label}</div>
+                    <div className="flex items-center justify-center text-xs">
+                      <span className="text-muted-foreground mr-1">Max:</span>
+                      <Input 
+                        type="number" 
+                        className="w-12 h-6 px-1 text-xs text-center border-primary/30"
+                        value={(maxScores as any)[field.key]}
+                        onChange={e => setMaxScores({...maxScores, [field.key]: Number(e.target.value) || 0})}
+                      />
+                    </div>
+                  </TableHead>
+                ))}
+                <TableHead className="text-center font-bold sticky right-0 bg-muted">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {students.map(s => {
+                const total = calculateTotal(s.id);
+                return (
+                  <TableRow key={s.id} className="hover:bg-muted/30">
+                    <TableCell className="font-medium sticky left-0 bg-background truncate max-w-[150px]" title={`${s.first_name} ${s.last_name}`}>
+                      {s.first_name} {s.last_name}
+                    </TableCell>
+                    
+                    {scoreFields.map(field => (
+                      <TableCell key={field.key} className="p-1">
+                        <Input 
+                          type="number" 
+                          min="0"
+                          max={(maxScores as any)[field.key]}
+                          className={`w-14 text-center mx-auto ${(scores[s.id]?.[field.key] !== "" && scores[s.id]?.[field.key] > 0) ? 'bg-green-50 dark:bg-green-900/20' : ''}`} 
+                          placeholder="-"
+                          value={scores[s.id]?.[field.key] ?? ""}
+                          onChange={e => handleScoreChange(s.id, field.key, e.target.value)}
+                        />
+                      </TableCell>
+                    ))}
+                    
+                    <TableCell className="text-center sticky right-0 bg-background font-bold text-primary">
+                      {total.toFixed(1)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
 }
+
 
 function ReportCardsTab({ schoolId }: { schoolId: string }) {
   const [classFilter, setClassFilter] = useState("");
