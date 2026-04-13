@@ -262,19 +262,19 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       }
 
       // 3. የተለዩትን ተማሪዎች ብቻ Save/Update ማድረግ
-      const {error: databaseError } = await supabase
+      const {error: saveError } = await supabase
         .from("grades")
         .upsert(recordsToSave, { onConflict: 'grades_unique_key' });
 
    
-if (databaseError) {
+if (saveError) {
         // 🚨 ዳታቤዙ እምቢ ካለ ስልክህ ላይ Pop-up ይወጣል
         alert("የዳታቤዝ ስህተት:\n" + JSON.stringify(saveError, null, 2)); toast.error(getUserFriendlyError(error));
       } else {
           toast.success("ውጤት በትክክል ተቀምጧል!");
       }
     } catch (err) { 
-        alert("የሲስተም ስህተት:\n" + err.message);
+        alert("የሲስተም ስህተት (Catch):\n" + err.message);
     } finally {
         setSaving(false);
     }
