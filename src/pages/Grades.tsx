@@ -266,13 +266,10 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
         .from("grades")
         .upsert(recordsToSave, { onConflict: 'grades_unique_key' });
 
-    
-         if (error) {
-    // ይህ በስልክህ ላይ ሙሉውን ስህተት በጽሁፍ ያሳያል
-    alert("Database Error: " + JSON.stringify(error, null, 2));
-    console.error(error);
-}
- toast.error(getUserFriendlyError(error));
+   
+if (saveError) {
+        // 🚨 ዳታቤዙ እምቢ ካለ ስልክህ ላይ Pop-up ይወጣል
+        alert("የዳታቤዝ ስህተት:\n" + JSON.stringify(saveError, null, 2)); toast.error(getUserFriendlyError(error));
       } else {
           toast.success("ውጤት በትክክል ተቀምጧል!");
       }
