@@ -264,7 +264,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       // 3. የተለዩትን ተማሪዎች ብቻ Save/Update ማድረግ
       const {error: saveError } = await supabase
         .from("grades")
-        .upsert(recordsToSave, { onConflict: 'grades_unique_key' });
+        .upsert(recordsToSave, { onConflict: 'student_id,subject_id,academic_year_id,term' });
 
    
 if (saveError) {
