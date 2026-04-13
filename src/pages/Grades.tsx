@@ -266,11 +266,9 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
         .from("grades")
         .upsert(recordsToSave, { onConflict: 'grades_unique_key' });
 
-     // if (error) {
-          // ችግር ካለ በቀላሉ Console ላይ እንድታየው ይረዳሃል
-         // console.error("Supabase Save Error:", error);
+    
          if (error) {
-    // ይህ በስልክህ ላይ ሙሉውን ስህተት በጽሁፍ ያሳይሃል
+    // ይህ በስልክህ ላይ ሙሉውን ስህተት በጽሁፍ ያሳያል
     alert("Database Error: " + JSON.stringify(error, null, 2));
     console.error(error);
 }
