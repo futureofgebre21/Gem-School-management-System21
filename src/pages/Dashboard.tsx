@@ -53,9 +53,9 @@ const fetchStudentData = async () => {
 
   const { data: grades } = await supabase.from("grades")
     .select(`
-      total_score, grade, term, 
+      grade, term, 
       quiz_1, quiz_2, assignment_1, assignment_2, 
-      project_lab, activity, homework, mid_exam, final_exam,
+      project_lab, activity, homework, mid_exam, final_exam,total_score,
       subjects(name)
     `) // 👈 ዝርዝር Columns እዚህ ተጨምረዋል
     .eq("school_id", schoolId)
