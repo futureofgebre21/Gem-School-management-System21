@@ -194,7 +194,7 @@ const fetchStudentData = async () => {
     <TableHead className="whitespace-nowrap">Quiz 2 (5%)</TableHead>
     <TableHead className="whitespace-nowrap">Assignment 1 (10%)</TableHead>
     <TableHead className="whitespace-nowrap">Assignment 2 (10%)</TableHead>
-    <TableHead className="whitespace-nowrap">Project (10%)</TableHead>
+    <TableHead className="whitespace-nowrap">Project_lab (10%)</TableHead>
     <TableHead className="whitespace-nowrap">Activity (5%)</TableHead>
     <TableHead className="whitespace-nowrap">HomeWork (5%)</TableHead>
     <TableHead className="whitespace-nowrap">Mid Exam (20%)</TableHead>
@@ -204,31 +204,35 @@ const fetchStudentData = async () => {
   </TableRow>
 </TableHeader>
 
-               
-<TableBody>
+        <TableBody>
   {studentGrades.map((g, i) => (
     <TableRow key={i}>
       <TableCell className="font-medium">{(g as any).subjects?.name ?? "-"}</TableCell>
       <TableCell>{g.term}</TableCell>
       
-      {/* 💡 አዲሶቹ Column-ዎች እዚህ ገቡ */}
-      <TableCell className="hidden md:table-cell">{g.quiz_1 ?? "-"}</TableCell>
-      <TableCell className="hidden md:table-cell">{g.mid_exam ?? "-"}</TableCell>
+      {/* ⚠️ እያንዳንዱ Column በትክክለኛው ቅደም ተከተል መቀመጥ አለበት */}
+      <TableCell>{g.quiz_1 ?? "-"}</TableCell>
+      <TableCell>{g.quiz_2 ?? "-"}</TableCell>
+      <TableCell>{g.assignment_1 ?? "-"}</TableCell>
+      <TableCell>{g.assignment_2 ?? "-"}</TableCell>
+      <TableCell>{g.project_lab ?? "-"}</TableCell>
+      <TableCell>{g.activity ?? "-"}</TableCell>
+      <TableCell>{g.homework ?? "-"}</TableCell>
+      <TableCell>{g.mid_exam ?? "-"}</TableCell>
+      <TableCell>{g.final_exam ?? "-"}</TableCell>
       
-      
-<TableCell className="font-bold text-blue-600">
-  {g.total_score ?? "0"} {/* 👈 በቀጥታ ከዳታቤዝ የመጣው ድምር */}
-</TableCell>
-
+      {/* ድምር ውጤት (ከዳታቤዝ የመጣው) */}
+      <TableCell className="font-bold text-blue-600">{g.total_score ?? "-"}</TableCell>
       
       <TableCell>
-        <Badge variant={g.grade && g.grade <= "C" ? "default" : "destructive"}>
-          {g.grade}
+        <Badge variant={g.grade && ["A", "B", "C"].includes(g.grade) ? "default" : "destructive"}>
+          {g.grade ?? "C"}
         </Badge>
       </TableCell>
     </TableRow>
   ))}
 </TableBody>
+       
 
               </Table>
             )}
