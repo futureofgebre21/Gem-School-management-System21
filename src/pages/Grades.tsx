@@ -281,7 +281,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
     console.error("Catch Block Error:", err);
   } finally {
     setSaving(false);
-  };
+  }
 
 
   const scoreFields = [
