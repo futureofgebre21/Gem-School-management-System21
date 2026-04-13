@@ -70,19 +70,31 @@ const fetchStudentData = async () => {
 
 
 
-    // Get attendance stats
-    const { data: att } = await supabase.from("student_attendance")
-      .select("status")
-      .eq("school_id", schoolId)
-      .in("student_id", studentIds);
+    
+  // ... (get attendance )
 
-    const attData = att ?? [];
-    setStudentAttendance({
-      present: attData.filter(a => a.status === "present").length,
-      absent: attData.filter(a => a.status === "absent").length,
-      late: attData.filter(a => a.status === "late").length,
-      total: attData.length,
-    });
+  // 1. Attendance Query በዚህ ተተካ (date ተጨምሯል)
+  const { data: att } = await supabase.from("student_attendance")
+    .select("date, status")
+    .in("student_id", studentIds)
+    .order("date", { ascending: false }); // አዲሱ ቀን ከላይ እንዲሆን
+
+  const attData = att ?? [];
+  
+  // 2. የዕለት ተዕለት ዝርዝሩን ወደ state ማስገባት
+  setAttendanceDetails(attData);
+
+  
+  setStudentAttendance({
+    present: attData.filter(a => a.status === "present").length,
+    absent: attData.filter(a => a.status === "absent").length,
+    late: attData.filter(a => a.status === "late").length,
+    total: attData.length,
+  });
+
+  
+};
+
 
     // Get school info
     const { data: school } = await supabase.from("schools").select("name, school_code").eq("id", schoolId).single();
