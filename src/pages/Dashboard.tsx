@@ -65,7 +65,7 @@ const fetchStudentData = async () => {
   
   setStudentGrades(grades ?? []);
  
-};
+
 
 
     // Get attendance stats
