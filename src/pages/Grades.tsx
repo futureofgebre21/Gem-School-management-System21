@@ -264,12 +264,17 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       // 3. የተለዩትን ተማሪዎች ብቻ Save/Update ማድረግ
       const { error } = await supabase
         .from("grades")
-        .upsert(recordsToSave, { onConflict: 'student_id,subject_id,academic_year_id,term' });
+        .upsert(recordsToSave, { onConflict: 'grades_unique_key' });
 
-      if (error) {
+     // if (error) {
           // ችግር ካለ በቀላሉ Console ላይ እንድታየው ይረዳሃል
-          console.error("Supabase Save Error:", error);
-          toast.error(getUserFriendlyError(error));
+         // console.error("Supabase Save Error:", error);
+         if (error) {
+    // ይህ በስልክህ ላይ ሙሉውን ስህተት በጽሁፍ ያሳይሃል
+    alert("Database Error: " + JSON.stringify(error, null, 2));
+    console.error(error);
+}
+ toast.error(getUserFriendlyError(error));
       } else {
           toast.success("ውጤት በትክክል ተቀምጧል!");
       }
