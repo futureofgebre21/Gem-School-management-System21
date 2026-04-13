@@ -251,7 +251,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
 
       // 2. የተሞላ አዲስ ዳታ ከሌለ ዝም ብሎ ወደ ዳታቤዝ እንዳይልከው ማገጃ
       if (recordsToSave.length === 0) {
-        toast.info("ምንም የተሞላ አዲስ ውጤት የለም!");
+        toast.info("No new grades to save!");
         setSaving(false);
         return;
       }
@@ -261,18 +261,26 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
         .from("grades")
         .upsert(recordsToSave, { onConflict: 'student_id,subject_id,academic_year_id,term' });
 
-   
-if (saveError) {
-        // 🚨 ዳታቤዙ እምቢ ካለ ስልክህ ላይ Pop-up ይወጣል
-        alert("የዳታቤዝ ስህተት:\n" + JSON.stringify(saveError, null, 2)); toast.error(getUserFriendlyError(error));
-      } else {
-          toast.success("ውጤት በትክክል ተቀምጧል!");
-      }
-    } catch (err) { 
-        alert("የሲስተም ስህተት (Catch):\n" + err.message);
-    } finally {
-        setSaving(false);
+   // ... handleSave ውስጥ ...
+
+    if (saveError) {
+      // 1. ለተጠቃሚው ወዳጃዊ መልዕክት (Friendly Message)
+      toast.error("Failed to save grades. Please try again.");
+      
+      // 2. ለራስህ (ለ Developer) በ console ላይ ስህተቱን አሳይ
+      console.error("Database Error Details:", saveError);
+    } else {
+      toast.success("Grades saved successfully!");
     }
+
+  } catch (err) {
+    // 1. ለተጠቃሚው አጠቃላይ የችግር መልዕክት
+    toast.error("An unexpected system error occurred.");
+    
+    // 2. ለራስህ በ console ላይ ስህተቱን አሳይ
+    console.error("Catch Block Error:", err);
+  } finally {
+    setSaving(false);
   };
 
 
