@@ -170,7 +170,7 @@ const fetchStudentData = async () => {
         </div>
 
         {/* Attendance Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2">
           <Card className="shadow-card">
             <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Attendance Rate</CardTitle></CardHeader>
             <CardContent><div className="text-2xl font-bold text-foreground">{attPct}%</div></CardContent>
@@ -203,8 +203,8 @@ const fetchStudentData = async () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className= "w-1/2">Date</TableHead>
+              <TableHead className= "w-1/2">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
