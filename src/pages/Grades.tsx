@@ -273,8 +273,8 @@ if (databaseError) {
       } else {
           toast.success("ውጤት በትክክል ተቀምጧል!");
       }
-    } catch (err: any) { 
-        toast.error(err.message); 
+    } catch (err) { 
+        alert("የሲስተም ስህተት:\n" + err.message);
     } finally {
         setSaving(false);
     }
