@@ -45,19 +45,28 @@ export default function Dashboard() {
     }
   }, [schoolId, userRole, linkedStudentId]);
 
-  const fetchStudentData = async () => {
-    if (!user || !schoolId || !linkedStudentId) return;
+ 
+const fetchStudentData = async () => {
+  if (!user || !schoolId || !linkedStudentId) return;
 
-    const studentIds = [linkedStudentId];
+  const studentIds = [linkedStudentId];
 
-    // Get recent grades
-    const { data: grades } = await supabase.from("grades")
-      .select("score, grade, term, subjects(name)")
-      .eq("school_id", schoolId)
-      .in("student_id", studentIds)
-      .order("created_at", { ascending: false })
-      .limit(10);
-    setStudentGrades(grades ?? []);
+  const { data: grades } = await supabase.from("grades")
+    .select(`
+      total_score, grade, term, 
+      quiz_1, quiz_2, assignment_1, assignment_2, 
+      project_lab, activity, homework, mid_exam, final_exam,
+      subjects(name)
+    `) // 👈 ዝርዝር Columns እዚህ ተጨምረዋል
+    .eq("school_id", schoolId)
+    .in("student_id", studentIds)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  
+  setStudentGrades(grades ?? []);
+ 
+};
+
 
     // Get attendance stats
     const { data: att } = await supabase.from("student_attendance")
