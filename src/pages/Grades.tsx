@@ -264,7 +264,7 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
    // ... handleSave ውስጥ ...
 
     if (saveError) {
-      // 1. ለተጠቃሚው ወዳጃዊ መልዕክት (Friendly Message)
+      // 1. ለተጠቃሚው ወዳጃዊ መልዕክት 
       toast.error("Failed to save grades. Please try again.");
       
       // 2. ለራስህ (ለ Developer) በ console ላይ ስህተቱን አሳይ
@@ -281,7 +281,8 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
     console.error("Catch Block Error:", err);
   } finally {
     setSaving(false);
-  
+  }
+};
 
 
   const scoreFields = [
