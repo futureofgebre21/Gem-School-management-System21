@@ -262,12 +262,12 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
       }
 
       // 3. የተለዩትን ተማሪዎች ብቻ Save/Update ማድረግ
-      const { error } = await supabase
+      const {error: databaseError } = await supabase
         .from("grades")
         .upsert(recordsToSave, { onConflict: 'grades_unique_key' });
 
    
-if (saveError) {
+if (databaseError) {
         // 🚨 ዳታቤዙ እምቢ ካለ ስልክህ ላይ Pop-up ይወጣል
         alert("የዳታቤዝ ስህተት:\n" + JSON.stringify(saveError, null, 2)); toast.error(getUserFriendlyError(error));
       } else {
