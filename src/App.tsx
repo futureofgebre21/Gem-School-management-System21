@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -84,6 +85,7 @@ const App = () => (
           </Routes>
         </AuthProvider>
       </BrowserRouter>
+      <SpeedInsights />
     </TooltipProvider>
   </QueryClientProvider>
 );
