@@ -48,18 +48,36 @@ function StudentGradesView({ schoolId }: { schoolId: string }) {
   const [grades, setGrades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 1. መደመሪያ ፈንክሽን (ያልተሞሉትን እየዘለለ እስካሁን የተሞሉትን ብቻ ይደምራል)
+  const calculateRunningTotal = (g: any) => {
+    const scores = [
+      g.quiz_1, g.quiz_2, g.assignment_1, g.assignment_2,
+      g.project_lab, g.activity, g.homework, g.mid_exam, g.final_exam
+    ];
+    return scores.reduce((acc, curr) => acc + (curr ? Number(curr) : 0), 0);
+  };
+
   useEffect(() => {
     const fetchGrades = async () => {
       if (!user) return;
-            const { data: students } = await supabase.from("students")
+      
+      const { data: students } = await supabase.from("students")
         .select("id").eq("school_id", schoolId).eq("user_id", user.id).eq("status", "active");
 
       const studentIds = (students ?? []).map(s => s.id);
       if (studentIds.length === 0) { setLoading(false); return; }
+
+      // 2. እዚህ ጋር ሁሉንም የውጤት አይነቶች እንዲያመጣ 'select' ተስተካክሏል
       const { data } = await supabase.from("grades")
-        .select("score, grade, term, subjects(name), academic_years(name), classes(name)")
+        .select(`
+          term, score, grade,
+          quiz_1, quiz_2, assignment_1, assignment_2, 
+          project_lab, activity, homework, mid_exam, final_exam,
+          subjects(name), academic_years(name), classes(name)
+        `)
         .eq("school_id", schoolId).in("student_id", studentIds)
         .order("created_at", { ascending: false });
+
       setGrades(data ?? []);
       setLoading(false);
     };
@@ -70,28 +88,47 @@ function StudentGradesView({ schoolId }: { schoolId: string }) {
   if (grades.length === 0) return <p className="text-center py-8 text-muted-foreground">No grades recorded yet.</p>;
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Subject</TableHead><TableHead>Class</TableHead><TableHead>Year</TableHead>
-          <TableHead>Term</TableHead><TableHead>Score</TableHead><TableHead>Grade</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {grades.map((g, i) => (
-          <TableRow key={i}>
-            <TableCell className="font-medium">{(g as any).subjects?.name ?? "-"}</TableCell>
-            <TableCell>{(g as any).classes?.name ?? "-"}</TableCell>
-            <TableCell>{(g as any).academic_years?.name ?? "-"}</TableCell>
-            <TableCell>{g.term}</TableCell>
-            <TableCell>{g.score}</TableCell>
-            <TableCell><Badge variant={g.grade && g.grade <= "C" ? "default" : "destructive"}>{g.grade}</Badge></TableCell>
+    <div className="overflow-x-auto"> {/* ስልክ ላይ ወደ ጎን እንዲንሸራተት */}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Subject</TableHead>
+            <TableHead>Term</TableHead>
+            <TableHead>Quiz (10%)</TableHead>
+            <TableHead>Assig. (20%)</TableHead>
+            <TableHead>Mid (20%)</TableHead>
+            <TableHead>Final (30%)</TableHead>
+            <TableHead className="text-blue-600 font-bold">Running Total</TableHead>
+            <TableHead>Grade</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {grades.map((g, i) => (
+            <TableRow key={i}>
+              <TableCell className="font-medium">{(g as any).subjects?.name ?? "-"}</TableCell>
+              <TableCell>{g.term}</TableCell>
+              {/* ኩዊዞችን ደምሮ ማሳየት ወይም ለየብቻ (እዚህ ጋር ለምሳሌ ተደምረዋል) */}
+              <TableCell>{(Number(g.quiz_1 || 0) + Number(g.quiz_2 || 0)) || "-"}</TableCell>
+              <TableCell>{(Number(g.assignment_1 || 0) + Number(g.assignment_2 || 0)) || "-"}</TableCell>
+              <TableCell>{g.mid_exam ?? "-"}</TableCell>
+              <TableCell>{g.final_exam ?? "-"}</TableCell>
+              {/* 3. እስካሁን የተደመረውን ውጤት እዚህ ያሳያል */}
+              <TableCell className="font-bold text-blue-700 bg-blue-50">
+                {calculateRunningTotal(g)}
+              </TableCell>
+              <TableCell>
+                <Badge variant={g.grade && g.grade <= "C" ? "default" : "destructive"}>
+                  {g.grade}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
+
 
 function EnterGradesTab({ schoolId }: { schoolId: string }) {
   const { user } = useAuth();
