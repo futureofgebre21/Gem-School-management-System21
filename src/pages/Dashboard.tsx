@@ -93,7 +93,6 @@ const fetchStudentData = async () => {
   });
 
   
-};
 
 
     // Get school info
@@ -188,8 +187,60 @@ const fetchStudentData = async () => {
             <CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Days Late</CardTitle></CardHeader>
             <CardContent><div className="text-2xl font-bold text-warning">{studentAttendance.late}</div></CardContent>
           </Card>
-        </div>
+        
+{/* ከ Attendance ሲታይ ቀኑንም አብሮ ማውጣት */}
+<Card className="shadow-card mt-6">
+  <CardHeader>
+    <CardTitle className="text-lg flex items-center gap-2">
+      <Calendar className="w-5 h-5" /> Attendance History
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    {attendanceDetails.length === 0 ? (
+      <p className="text-center py-4 text-muted-foreground">No attendance records yet.</p>
+    ) : (
+      <div className="max-h-64 overflow-y-auto border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {attendanceDetails.map((record, i) => (
+              <TableRow key={i}>
+                <TableCell className="font-medium">
+                  
+                  {new Date(record.date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </TableCell>
+                <TableCell>
+                  
+                  <Badge 
+                    className={
+                      record.status === 'present' ? 'bg-green-500 hover:bg-green-600' :
+                      record.status === 'absent' ? 'bg-red-500 hover:bg-red-600' :
+                      'bg-yellow-500 hover:bg-yellow-600'
+                    }
+                  >
+                    {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    )}
+  </CardContent>
+</Card>
 
+</div>
         {/* Recent Grades */}
         <Card className="shadow-card">
           <CardHeader>
