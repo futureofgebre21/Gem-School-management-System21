@@ -187,23 +187,49 @@ const fetchStudentData = async () => {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Term</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Grade</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {studentGrades.map((g, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">{(g as any).subjects?.name ?? "-"}</TableCell>
-                      <TableCell>{g.term}</TableCell>
-                      <TableCell>{g.score}</TableCell>
-                      <TableCell><Badge variant={g.grade && g.grade <= "C" ? "default" : "destructive"}>{g.grade}</Badge></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+  <TableRow className="bg-muted/50">
+    <TableHead className="whitespace-nowrap">Subject</TableHead>
+    <TableHead className="whitespace-nowrap">Term</TableHead>
+    <TableHead className="whitespace-nowrap">Quiz 1 (5%)</TableHead>
+    <TableHead className="whitespace-nowrap">Quiz 2 (5%)</TableHead>
+    <TableHead className="whitespace-nowrap">Assignment 1 (10%)</TableHead>
+    <TableHead className="whitespace-nowrap">Assignment 2 (10%)</TableHead>
+    <TableHead className="whitespace-nowrap">Project (10%)</TableHead>
+    <TableHead className="whitespace-nowrap">Activity (5%)</TableHead>
+    <TableHead className="whitespace-nowrap">HomeWork (5%)</TableHead>
+    <TableHead className="whitespace-nowrap">Mid Exam (20%)</TableHead>
+    <TableHead className="whitespace-nowrap">Final Exam (30%)</TableHead>
+    <TableHead className="whitespace-nowrap text-blue-600 font-bold">Total (100%)</TableHead>
+    <TableHead className="whitespace-nowrap">Grade</TableHead>
+  </TableRow>
+</TableHeader>
+
+               
+<TableBody>
+  {studentGrades.map((g, i) => (
+    <TableRow key={i}>
+      <TableCell className="font-medium">{(g as any).subjects?.name ?? "-"}</TableCell>
+      <TableCell>{g.term}</TableCell>
+      
+      {/* 💡 አዲሶቹ Column-ዎች እዚህ ገቡ */}
+      <TableCell className="hidden md:table-cell">{g.quiz_1 ?? "-"}</TableCell>
+      <TableCell className="hidden md:table-cell">{g.mid_exam ?? "-"}</TableCell>
+      
+      
+<TableCell className="font-bold text-blue-600">
+  {g.total_score ?? "0"} {/* 👈 በቀጥታ ከዳታቤዝ የመጣው ድምር */}
+</TableCell>
+
+      
+      <TableCell>
+        <Badge variant={g.grade && g.grade <= "C" ? "default" : "destructive"}>
+          {g.grade}
+        </Badge>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
               </Table>
             )}
           </CardContent>
