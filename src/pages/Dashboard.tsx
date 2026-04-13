@@ -24,6 +24,8 @@ export default function Dashboard() {
   const [studentAttendance, setStudentAttendance] = useState<{ present: number; absent: number; late: number; total: number }>({ present: 0, absent: 0, late: 0, total: 0 });
   const [linkedStudentId, setLinkedStudentId] = useState<string | null | undefined>(undefined);
 
+const [attendanceDetails, setAttendanceDetails] = useState<any[]>([]);
+
   const isStudent = userRole === "student";
   const isParent = userRole === "parent";
   const isTeacher = userRole === "teacher";
