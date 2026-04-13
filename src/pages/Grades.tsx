@@ -243,11 +243,6 @@ function EnterGradesTab({ schoolId }: { schoolId: string }) {
             mid_exam: parseGrade(studentScores.mid_exam),
             final_exam: parseGrade(studentScores.final_exam),
             
-            // 💡 መፍትሄ 2፡ `total_score` የነበረውን ወደ `score` ቀይረነዋል (ከሌላው ኮድህ ጋር እንዲገጥም)
-            score: total,
-
- total_score: total,
- 
   
             grade: getGradeFromPercentage(total), 
             recorded_by: user?.id,
