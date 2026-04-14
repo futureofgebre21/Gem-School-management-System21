@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { GraduationCap, UserCog, Users, Home, ArrowRight, Building2, Hash, CheckCircle2, Copy } from "lucide-react";
 
-type Step = "role-select" | "school-code" | "school-create" | "school-created" | "teacher-verify";
+// አሁን ካለው Step ላይ 'admin-sub-role' የሚል መጨመር
+type Step = "role-select" | "admin-sub-role" | "school-code" | "school-create" | "school-created" | "teacher-verify";
 
 const roles = [
   { value: "school_admin", label: "Admin", icon: UserCog, desc: "Create & manage your school" },
