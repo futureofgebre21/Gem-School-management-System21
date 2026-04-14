@@ -29,28 +29,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [schoolId, setSchoolId] = useState<string | null>(null);
 
-  const fetchUserMeta = async (userId: string) => {
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role, school_id")
-      .eq("user_id", userId)
-      .limit(1)
-      .single();
-
-    if (roles) {
-      setUserRole(roles.role);
-      setSchoolId(roles.school_id);
-    }
-
-    if (!roles?.school_id) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("school_id")
-        .eq("id", userId)
+    const fetchUserMeta = async (userId: string) => {
+    try {
+      // 1. መረጃውን የምንወስደው ከ user_assignments ቴብል ነው
+      const { data: assignment, error } = await supabase
+        .from("user_assignments")
+        .select("role_name, school_id") 
+        .eq("user_id", userId)
         .single();
-      if (profile?.school_id) setSchoolId(profile.school_id);
+
+      if (error) {
+        console.error("Error fetching user meta:", error.message);
+        return;
+      }
+
+      if (assignment) {
+        setUserRole(assignment.role_name);
+        setSchoolId(assignment.school_id);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
     }
   };
+
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
