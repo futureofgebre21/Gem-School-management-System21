@@ -37,8 +37,9 @@ export default function Auth() {
 
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: roles } = await supabase.from("user_roles")
-            .select("role, school_id").eq("user_id", user.id).limit(1);
+          const { data: roles } = await supabase.from("user_assignments") // ቴብል መቀየር
+  .select("role_name, school_id").eq("user_id", user.id).limit(1);
+
           if (roles && roles.length > 0 && roles[0].school_id) {
             navigate("/dashboard");
           } else {
