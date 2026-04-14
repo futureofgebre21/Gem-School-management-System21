@@ -120,8 +120,7 @@ if (teacher.user_id) {
         return;
       }
 
-      // የተቀረው የ Update ኮድህ እዚህ ይቀጥላል...
-      
+     
         console.log("Updating teacher with User ID:", user?.id); 
 const { error: updateError } = await supabase
   .from("teachers")
