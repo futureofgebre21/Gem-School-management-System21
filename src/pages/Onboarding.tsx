@@ -106,7 +106,7 @@ if (teacher.user_id) {
       const { data: teacher, error: teacherError } = await supabase.from("teachers")
         .select("id, first_name, last_name,user_id")
         .eq("school_id", school.id)
-        .ilike("teacher_id", teacherId.trim()) // ዳታቤዝህ ላይ 'teacher_id' መሆኑን አረጋግጥ
+        .ilike("teacher_id", teacherId.trim()) 
         .maybeSingle();
 
       // 🕵️ መርማሪ መስመር 3: ስህተቱ ምንድነው?
@@ -122,17 +122,16 @@ if (teacher.user_id) {
 
       // የተቀረው የ Update ኮድህ እዚህ ይቀጥላል...
       
-        console.log("Updating teacher with User ID:", user?.id); // ይህንን ቼክ ለማድረግ ጨምረው
-
+        console.log("Updating teacher with User ID:", user?.id); 
 const { error: updateError } = await supabase
   .from("teachers")
   .update({ user_id: user?.id }) 
   .eq("id", teacher.id)
-  .select(); // የሰራ መሆኑን ለማረጋገጥ select() ጨምር
+  .select(); // የሰራ መሆኑን ለማረጋገጥ select() መጨመር
 
 if (updateError) {
   console.error("Update failed:", updateError.message);
-  toast.error("መረጃውን ማያያዝ አልተቻለም፦ " + updateError.message);
+  toast.error("Do not connect data፦ " + updateError.message);
   return;
 }
 
