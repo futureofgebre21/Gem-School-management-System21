@@ -53,8 +53,10 @@ export default function Onboarding() {
   const assignRole = async (schoolId: string, role: string) => {
     if (!user) return;
     setLoading(true);
-    const { error: roleError } = await supabase.from("user_roles")
-      .insert({ user_id: user.id, role: role as any, school_id: schoolId });
+    // ከ user_roles ይልቅ user_assignments መጠቀም አለበት
+const { error: roleError } = await supabase.from("user_assignments")
+  .insert({ user_id: user.id, role_name: role, school_id: schoolId });
+
     if (roleError) { toast.error(getUserFriendlyError(roleError)); setLoading(false); return; }
     await supabase.from("profiles").update({ school_id: schoolId }).eq("id", user.id);
     toast.success("Setup complete! Redirecting...");
