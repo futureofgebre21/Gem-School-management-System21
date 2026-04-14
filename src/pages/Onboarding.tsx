@@ -238,17 +238,20 @@ if (updateError) {
       <CardTitle className="text-xl">Admin Position</CardTitle>
     </CardHeader>
     <CardContent className="space-y-3">
-      {["Record Office", "Director", "Vice Academic", "vice Admin", "Human Resource"].map((role) => (
+      {["Record Office", "Director", "Vice Academic", "vice Admin", "Human Resource"].map((label) => (
+const roleValue = label.toLowerCase.replace("","_");
+
+return
         <Button 
-          key={role} 
+          key={roleValue} 
           variant="outline" 
           className="w-full justify-start text-left" 
           onClick={() => {
-            setSelectedRole(role); 
+            setSelectedRole(roleValue); 
             setStep("school-code"); 
           }}
         >
-          {role.replace("_", " ").toUpperCase()}
+          {label}
         </Button>
       ))}
       <Button variant="ghost" className="w-full" onClick={() => setStep("role-select")}>
