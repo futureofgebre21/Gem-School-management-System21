@@ -129,11 +129,12 @@ export default function Auth() {
 
         // Assign student role
         if (signUpData.user) {
-          await supabase.from("user_roles").insert({
-            user_id: signUpData.user.id,
-            role: "student" as any,
-            school_id: school.id,
-          });
+          await supabase.from("user_assignments").insert({ // ቴብሉን ወደ user_assignments መቀየር
+  user_id: signUpData.user.id,
+  role_name: "student", // የ column አይነት role_name
+  school_id: school.id,
+});
+
           await supabase.from("profiles").update({ school_id: school.id }).eq("id", signUpData.user.id);
         }
 
