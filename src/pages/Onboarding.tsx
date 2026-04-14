@@ -65,15 +65,17 @@ const { error: roleError } = await supabase.from("user_assignments")
   };
 
   const handleRoleContinue = () => {
-    if (!selectedRole) { toast.error("Please select your role"); return; }
-    if (selectedRole === "school_admin") {
-      setStep("school-create");
-    } else if (selectedRole === "teacher") {
-      setStep("teacher-verify");
-    } else {
-      setStep("school-code");
-    }
-  };
+  if (!selectedRole) { toast.error("Please select your role"); return; }
+  
+  if (selectedRole === "school_admin") {
+    setStep("admin-sub-role"); 
+  } else if (selectedRole === "teacher") {
+    setStep("teacher-verify");
+  } else {
+    setStep("school-code");
+  }
+};
+
 
     const handleTeacherVerify = async () => {
     if (!teacherSchoolCode.trim() || !teacherId.trim()) {
