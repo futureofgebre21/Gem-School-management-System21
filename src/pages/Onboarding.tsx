@@ -232,30 +232,33 @@ if (updateError) {
           </Card>
         )}
 
+
 {step === "admin-sub-role" && (
   <Card className="shadow-card">
     <CardHeader className="text-center">
       <CardTitle className="text-xl">Admin Position</CardTitle>
     </CardHeader>
     <CardContent className="space-y-3">
-      {["Record Office", "Director", "Vice Academic", "vice Admin", "Human Resource"].map((label) => (
-const roleValue = label.toLowerCase.replace(" ","_");
+      {["Record Office", "Director", "Vice Academic", "Vice Admin", "Human Resource"].map((label) => {
+        // 1. መጀመሪያ ስሙን ለዳታቤዝ በሚሆን መልኩ ማስተካከል (ለምሳሌ፡ record_office)
+        const roleValue = label.toLowerCase().replace(/\s+/g, "_");
 
-return (
-        <Button 
-          key={roleValue} 
-          variant="outline" 
-          className="w-full justify-start text-left" 
-          onClick={() => {
-            setSelectedRole(roleValue); 
-            setStep("school-code"); 
-          }}
-        >
-          {label}
-        </Button>
-))}
+        return (
+          <Button 
+            key={roleValue} 
+            variant="outline" 
+            className="w-full justify-start text-left" 
+            onClick={() => {
+              setSelectedRole(roleValue); 
+              setStep("school-code"); 
+            }}
+          >
+            {label}
+          </Button>
+        );
+      })}
 
-      <Button variant="ghost" className="w-full" onClick={() => setStep("role-select")}>
+      <Button variant="ghost" className="w-full mt-2" onClick={() => setStep("role-select")}>
         ← Back to role selection 
       </Button>
     </CardContent>
