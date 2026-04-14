@@ -232,6 +232,34 @@ if (updateError) {
           </Card>
         )}
 
+{step === "admin-sub-role" && (
+  <Card className="shadow-card">
+    <CardHeader className="text-center">
+      <CardTitle className="text-xl">Admin Position</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-3">
+      {["Record Office", "Director", "Vice Academic", "vice Admin", "Human Resource"].map((role) => (
+        <Button 
+          key={role} 
+          variant="outline" 
+          className="w-full justify-start text-left" 
+          onClick={() => {
+            setSelectedRole(role); 
+            setStep("school-code"); 
+          }}
+        >
+          {role.replace("_", " ").toUpperCase()}
+        </Button>
+      ))}
+      <Button variant="ghost" className="w-full" onClick={() => setStep("role-select")}>
+        ← Back to role selection 
+      </Button>
+    </CardContent>
+  </Card>
+)}
+
+
+
         {step === "school-code" && (
           <Card className="shadow-card">
             <CardHeader className="text-center">
