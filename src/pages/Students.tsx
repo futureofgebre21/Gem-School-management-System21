@@ -136,7 +136,7 @@ export default function Students() {
       section: selectedSection?.name || null,
     };
 
-    const enrollmentData = {
+    const entrollmentData = {
       school_id: schoolId,
       class_id: form.class_id,
       section_id: form.section_id || null,
@@ -168,15 +168,15 @@ export default function Students() {
       if (newStudent) {
         const { error: enrollErr } = await supabase.from("entrollments").insert({
           student_id: newStudent.id,
-          ...enrollmentData
+          ...entrollmentData
         });
         
         if (enrollErr) {
-          toast.error("Enrollment Failed: " + enrollErr.message);
+          toast.error("Entrollment Failed: " + enrollErr.message);
           return;
         }
       }
-      toast.success("Student registered and enrolled successfully");
+      toast.success("Student registered and entrolled successfully");
     }
 
     setDialogOpen(false); setForm(emptyForm); setEditId(null); fetchStudents();
