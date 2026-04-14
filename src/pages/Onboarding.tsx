@@ -238,7 +238,7 @@ if (updateError) {
       <CardTitle className="text-xl">Admin Position</CardTitle>
     </CardHeader>
     <CardContent className="space-y-3">
-      {["Record Office", "Director", "Vice Academic", "vice Admin", "Human Resource"].map((label) => {
+      {["Record Office", "Director", "Vice Academic", "vice Admin", "Human Resource"].map((label) => (
 const roleValue = label.toLowerCase.replace(" ","_");
 
 return (
@@ -253,8 +253,7 @@ return (
         >
           {label}
         </Button>
-);
-      }
+))}
 
       <Button variant="ghost" className="w-full" onClick={() => setStep("role-select")}>
         ← Back to role selection 
