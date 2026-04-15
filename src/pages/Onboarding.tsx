@@ -249,9 +249,15 @@ if (updateError) {
             variant="outline" 
             className="w-full justify-start text-left" 
             onClick={() => {
-              setSelectedRole(roleValue); 
-              setStep("school-code"); 
-            }}
+  setSelectedRole(roleValue); 
+  // ዳይሬክተር ከሆነ ወደ መፍጠሪያ፣ ሌላ ከሆነ ወደ ኮድ ማስገቢያ
+  if (roleValue === "director") {
+    setStep("school-create");
+  } else {
+    setStep("school-code");
+  }
+}}
+
           >
             {label}
           </Button>
