@@ -26,10 +26,20 @@ export default function Dashboard() {
 
 const [attendanceDetails, setAttendanceDetails] = useState<any[]>([]);
 
+
   const isStudent = userRole === "student";
   const isParent = userRole === "parent";
   const isTeacher = userRole === "teacher";
-  const isAdmin = userRole === "school_admin" || userRole === "super_admin";
+  
+  // አዲስ ድርሻዎች
+  const isDirector = userRole === "director";
+  const isRecordOffice = userRole === "record_office";
+  const isViceAdmin = userRole === "vice_admin";
+  const isHR = userRole === "human_resource";
+  const isCasher = userRole === "casher";
+
+  // ማንኛውም የአስተዳደር ስራ የሚሰራ ሰው (Quick Actions ለማሳየት)
+  const canManageData = isDirector || isRecordOffice || isViceAdmin || userRole === "school_admin"|| userRole === "super_admin";
 
   // Check if student/parent has linked their profile
   useEffect(() => {
