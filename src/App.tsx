@@ -39,7 +39,7 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   if (!user) return <Navigate to="/auth" replace />;
   // Only redirect to onboarding if user has NO role AND NO school
-  if (!userRole && !schoolId) return <Navigate to="/onboarding" replace />;
+  if (!userRole || !schoolId) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
 }
 
