@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react"; 
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,8 +25,20 @@ const roles = [
 ];
 
 export default function Onboarding() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth(); 
   const navigate = useNavigate();
+
+  // 3. ተጠቃሚው መኖሩን የሚያረጋግጠው logic (በፈንክሽኑ ውስጥ)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth"); 
+    }
+  }, [user, authLoading, navigate]);
+
+  // 4. Loading check (በፈንክሽኑ ውስጥ)
+  if (authLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
   const [step, setStep] = useState<Step>("role-select");
   const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(false);
