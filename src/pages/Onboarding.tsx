@@ -96,7 +96,7 @@ const { error: roleError } = await supabase.from("user_assignments")
       }
 // 3. መለያው ቀደም ብሎ በሌላ ሰው መያዙን ማረጋገጥ
 if (teacher.user_id) {
-  toast.error("ይህ መለያ ቀደም ብሎ ከሌላ አካውንት ጋር ተያይዟል!");
+  toast.error("This number connected another account!");
   setTeacherVerifying(false);
   return;
 }
