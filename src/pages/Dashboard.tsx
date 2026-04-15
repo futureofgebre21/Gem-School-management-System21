@@ -413,43 +413,38 @@ const fetchStudentData = async () => {
       </div>
 
       {/* Quick Actions - role filtered */}
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {isAdmin && (
-              <Link to="/dashboard/students" className="p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors text-center group">
-                <Plus className="w-8 h-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
-                <p className="text-sm font-medium">Add Student</p>
-              </Link>
-            )}
-            <Link to="/dashboard/attendance" className="p-4 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-colors text-center group">
-              <Calendar className="w-8 h-8 mx-auto mb-2 text-secondary group-hover:scale-110 transition-transform" />
-              <p className="text-sm font-medium">{isTeacher ? "Take Attendance" : "View Attendance"}</p>
-            </Link>
-            {isAdmin && (
-              <Link to="/dashboard/teachers" className="p-4 rounded-lg bg-success/10 hover:bg-success/20 transition-colors text-center group">
-                <UserCog className="w-8 h-8 mx-auto mb-2 text-success group-hover:scale-110 transition-transform" />
-                <p className="text-sm font-medium">Manage Teachers</p>
-              </Link>
-            )}
-            {isTeacher && (
-              <Link to="/dashboard/grades" className="p-4 rounded-lg bg-success/10 hover:bg-success/20 transition-colors text-center group">
-                <FileText className="w-8 h-8 mx-auto mb-2 text-success group-hover:scale-110 transition-transform" />
-                <p className="text-sm font-medium">Enter Grades</p>
-              </Link>
-            )}
-            {isAdmin && (
-              <Link to="/dashboard/import" className="p-4 rounded-lg bg-info/10 hover:bg-info/20 transition-colors text-center group">
-                <FileUp className="w-8 h-8 mx-auto mb-2 text-info group-hover:scale-110 transition-transform" />
-                <p className="text-sm font-medium">Import Data</p>
-              </Link>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  {/* ተማሪ መመዝገብ የሚችለው Record Office ብቻ ነው */}
+  {(isRecordOffice) && (
+    <Link to="/dashboard/students" className="p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors text-center group">
+      <Plus className="w-8 h-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
+      <p className="text-sm font-medium">Add Student</p>
+    </Link>
+  )}
+
+  {/* ክትትል ማየት ለሁሉም ሰራተኞች */}
+  <Link to="/dashboard/attendance" className="p-4 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-colors text-center group">
+    <Calendar className="w-8 h-8 mx-auto mb-2 text-secondary group-hover:scale-110 transition-transform" />
+    <p className="text-sm font-medium">Attendance</p>
+  </Link>
+
+  {/* መምህራንን መቆጣጠር ለ HR  ብቻ */}
+  {(isHR ) && (
+    <Link to="/dashboard/teachers" className="p-4 rounded-lg bg-success/10 hover:bg-success/20 transition-colors text-center group">
+      <UserCog className="w-8 h-8 mx-auto mb-2 text-success group-hover:scale-110 transition-transform" />
+      <p className="text-sm font-medium">Manage Teachers</p>
+    </Link>
+  )}
+
+  {/* ክፍያዎችን ማስተዳደር ለ Casher ብቻ */}
+  {(isCasher) && (
+    <Link to="/dashboard/finance" className="p-4 rounded-lg bg-warning/10 hover:bg-warning/20 transition-colors text-center group">
+      <TrendingUp className="w-8 h-8 mx-auto mb-2 text-warning group-hover:scale-110 transition-transform" />
+      <p className="text-sm font-medium">Fee payments</p>
+    </Link>
+  )}
+</div>
+
 
       {/* Super admin: per-school table */}
       {userRole === "super_admin" && schoolStats.length > 0 && (
