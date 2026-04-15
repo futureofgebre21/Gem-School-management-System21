@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from("user_assignments")
         .select("role_name, school_id") 
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching user meta:", error.message);
