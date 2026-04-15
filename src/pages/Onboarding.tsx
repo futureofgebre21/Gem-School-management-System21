@@ -239,7 +239,7 @@ if (updateError) {
       <CardTitle className="text-xl">Admin Position</CardTitle>
     </CardHeader>
     <CardContent className="space-y-3">
-      {["Record Office", "Director", "Vice Academic", "Vice Admin", "Human Resource"].map((label) => {
+      {["Director", "Recored office", "Vice Academic", "Vice Admin", "Human Resource" "Casher"].map((label) => {
         // 1. መጀመሪያ ስሙን ለዳታቤዝ በሚሆን መልኩ ማስተካከል (ለምሳሌ፡ record_office)
         const roleValue = label.toLowerCase().replace(/\s+/g, "_");
 
