@@ -37,6 +37,8 @@ const [attendanceDetails, setAttendanceDetails] = useState<any[]>([]);
   const isViceAdmin = userRole === "vice_admin";
   const isHR = userRole === "human_resource";
   const isCasher = userRole === "casher";
+const isAdmin = userRole === "school_admin" || userRole === "super_admin" || userRole === "director";
+
 
   // ማንኛውም የአስተዳደር ስራ የሚሰራ ሰው (Quick Actions ለማሳየት)
   const canManageData = isDirector || isRecordOffice || isViceAdmin || userRole === "school_admin"|| userRole === "super_admin";
