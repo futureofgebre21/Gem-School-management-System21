@@ -175,7 +175,7 @@ if (updateError) {
     const { data, error } = await supabase.rpc("create_school_with_admin", {
       _name: newSchool.name,
       _type: schoolType,
-_role_name: selectedRole,
+_role_name: director,
       _city: newSchool.city || null,
       _country: newSchool.country || null,
       _phone: newSchool.phone || null,
