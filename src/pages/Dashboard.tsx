@@ -417,7 +417,25 @@ const fetchStudentData = async () => {
       </div>
 
       {/* Quick Actions - role filtered */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  
+  {/* ለዳይሬክተሩ ብቻ የሚታዩ የAdd Staff በተኖች */}
+  {isDirector && (
+    <>
+      <AddStaffModal role="record_office" schoolId={schoolId!} />
+      <AddStaffModal role="vice_admin" schoolId={schoolId!} />
+      <AddStaffModal role="vice_academic" schoolId={schoolId!} />
+    </>
+  )}
+
+  {/* ለቪፒ አድሚን ብቻ የሚታዩ የHR እና Casher በተኖች */}
+  {isViceAdmin && (
+    <>
+      <AddStaffModal role="human_resource" schoolId={schoolId!} />
+      <AddStaffModal role="casher" schoolId={schoolId!} />
+    </>
+  )}
+
   {/* ተማሪ መመዝገብ የሚችለው Record Office ብቻ ነው */}
   {(isRecordOffice) && (
     <Link to="/dashboard/students" className="p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors text-center group">
