@@ -172,24 +172,20 @@ if (updateError) {
   const handleCreateSchool = async () => {
     if (!newSchool.name.trim()) { toast.error("School name is required"); return; }
     setLoading(true);
+    
+    // በትክክል የ RPC ጥሪውን ማስተካከል
     const { data, error } = await supabase.rpc("create_school_with_admin", {
-      _name: newSchool.name,
-      _type: schoolType,
-      _city: newSchool.city || null,
-      _country: newSchool.country || null,
-      _phone: newSchool.phone || null,
-      _email: newSchool.email || null,
- _role_name: director,
-_p_user_id: user.id
+      school_name: newSchool.name,
+      school_type: schoolType,
+      city: newSchool.city || null,
+      country: newSchool.country || null,
+      phone: newSchool.phone || null,
+      email: newSchool.email || null,
+      p_role_name: "director", 
+      p_user_id: user.id      // የገባውን ተጠቃሚ ID መላክ
     });
-    if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return; }
-    if (data) {
-      const { data: school } = await supabase.from("schools").select("school_code").eq("id", data).single();
-      if (school?.school_code) {
-        setCreatedSchoolCode(school.school_code);
-        setStep("school-created");
-        setLoading(false);
-        return;
+
+    if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return;
       }
     }
     toast.success("School created!");
