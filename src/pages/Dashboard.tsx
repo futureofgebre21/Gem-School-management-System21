@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import StudentLinker from "@/components/StudentLinker";
+import { AddStaffModal } from "@/components/AddStaffModal"; 
+
 
 export default function Dashboard() {
   const { user, schoolId, userRole } = useAuth();
