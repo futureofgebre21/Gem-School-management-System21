@@ -169,11 +169,10 @@ if (updateError) {
     assignRole(foundSchool.id, selectedRole);
   };
 
-  const handleCreateSchool = async () => {
+    const handleCreateSchool = async () => {
     if (!newSchool.name.trim()) { toast.error("School name is required"); return; }
     setLoading(true);
-    
-    // በትክክል የ RPC ጥሪውን ማስተካከል
+
     const { data, error } = await supabase.rpc("create_school_with_admin", {
       school_name: newSchool.name,
       school_type: schoolType,
@@ -182,22 +181,35 @@ if (updateError) {
       phone: newSchool.phone || null,
       email: newSchool.email || null,
       p_role_name: "director", 
-      p_user_id: user.id      // የገባውን ተጠቃሚ ID መላክ
+      p_user_id: user.id
     });
 
-    if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return;
-      }
-if (data) {
-      const { data: school } = await supabase.from("schools").select("school_code").eq("id", data).single();
-      if (school?.school_code) {
+    if (error) { 
+      toast.error(getUserFriendlyError(error)); 
+      setLoading(false); 
+      return; 
+    }
+
+    if (data) {
+      // ትምህርት ቤቱን በአይዲ ፈልገን ኮዱን ማምጣት
+      const { data: school, error: schoolError } = await supabase
+        .from("schools")
+        .select("school_code")
+        .eq("id", data)
+        .single();
+
+      if (school && school.school_code) {
         setCreatedSchoolCode(school.school_code);
         setStep("school-created");
-        setLoading(false);
-        return;
+      } else {
+        // ካልተሳካ ወደ ዳሽቦርድ ይላክ
+        window.location.href = "/dashboard";
+      }
     }
-    toast.success("School created!");
-    window.location.href = "/dashboard";
+    
+    setLoading(false); // በሁለቱም ሁኔታ Loading ን ማቆም
   };
+
 
   const copyCode = () => {
     navigator.clipboard.writeText(createdSchoolCode);
