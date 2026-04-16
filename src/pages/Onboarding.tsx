@@ -180,6 +180,7 @@ if (updateError) {
       _phone: newSchool.phone || null,
       _email: newSchool.email || null,
  _role_name: director,
+_p_user_id: user.id
     });
     if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return; }
     if (data) {
