@@ -175,11 +175,11 @@ if (updateError) {
     const { data, error } = await supabase.rpc("create_school_with_admin", {
       _name: newSchool.name,
       _type: schoolType,
-_role_name: director,
       _city: newSchool.city || null,
       _country: newSchool.country || null,
       _phone: newSchool.phone || null,
       _email: newSchool.email || null,
+_role_name: director,
     });
     if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return; }
     if (data) {
