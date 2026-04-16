@@ -26,7 +26,7 @@ export default function Dashboard() {
 
 const [attendanceDetails, setAttendanceDetails] = useState<any[]>([]);
 
-
+const isSuperAdmin = userRole === "super_admin";
   const isStudent = userRole === "student";
   const isParent = userRole === "parent";
   const isTeacher = userRole === "teacher";
