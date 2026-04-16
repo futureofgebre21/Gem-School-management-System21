@@ -179,7 +179,7 @@ if (updateError) {
       _country: newSchool.country || null,
       _phone: newSchool.phone || null,
       _email: newSchool.email || null,
-//_role_name: director,
+ _role_name: director,
     });
     if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return; }
     if (data) {
