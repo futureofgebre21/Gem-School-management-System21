@@ -187,6 +187,13 @@ if (updateError) {
 
     if (error) { toast.error(getUserFriendlyError(error)); setLoading(false); return;
       }
+if (data) {
+      const { data: school } = await supabase.from("schools").select("school_code").eq("id", data).single();
+      if (school?.school_code) {
+        setCreatedSchoolCode(school.school_code);
+        setStep("school-created");
+        setLoading(false);
+        return;
     }
     toast.success("School created!");
     window.location.href = "/dashboard";
