@@ -419,9 +419,9 @@ const fetchStudentData = async () => {
       {/* Quick Actions - role filtered */}
 {/* 1. የሰራተኛ አስተዳደር (Staff Management) - ሰፋ ያለ ቦታ ይፈልጋል */}
 {(isDirector || isViceAdmin) && schoolId && (
-  <div className="mb-8 space-y-4">
+  <div className="grid grid -cols-2 sm:grid-cols-4 gap-3">
     <h2 className="text-lg font-semibold text-foreground border-b pb-2">Staff Registration</h2>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       
       {/* ለዳይሬክተሩ ብቻ የሚታዩ */}
       {isDirector && (
