@@ -43,7 +43,7 @@ export default function DashboardLayout() {
 
   const filteredNav = navItems.filter(item => {
     if (!userRole) return item.to === "/dashboard";
-    return item.roles.includes('guest');
+    return item.roles.includes('userRole');
   });
 
   return (
