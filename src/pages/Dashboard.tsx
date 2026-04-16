@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import StudentLinker from "@/components/StudentLinker";
-import { AddStaffModal } from "@/components/AddStaffModal"; 
+import { AddStafModal } from "@/components/AddStafModal"; 
 
 
 export default function Dashboard() {
