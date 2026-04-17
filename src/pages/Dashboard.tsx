@@ -21,6 +21,23 @@ export default function Dashboard() {
   const [schoolInfo, setSchoolInfo] = useState<{ name: string; school_code: string | null } | null>(null);
   const [schoolStats, setSchoolStats] = useState<{ name: string; type: string; studentCount: number }[]>([]);
 
+// እነዚህን ከ Dashboard component መጀመሪያ ላይ ይቀመጣል
+const [staff, setStaff] = useState<any[]>([]); // state
+
+useEffect(() => {
+  if (canManageData) { // አስተዳዳሪ ከሆኑ ብቻ ነው የሚታየው
+    async function fetchStaff() {
+      const { data } = await supabase
+        .from('staff_invites')
+        .select('*')
+        .eq('school_id', schoolId);
+      if (data) setStaff(data);
+    }
+    fetchStaff();
+  }
+}, [schoolId, canManageData]);
+
+
   // Student-specific state
   const [studentGrades, setStudentGrades] = useState<any[]>([]);
   const [studentAttendance, setStudentAttendance] = useState<{ present: number; absent: number; late: number; total: number }>({ present: 0, absent: 0, late: 0, total: 0 });
@@ -44,22 +61,6 @@ const isAdmin = userRole === "school_admin" || userRole === "super_admin" || use
 
   // ማንኛውም የአስተዳደር ስራ የሚሰራ ሰው (Quick Actions ለማሳየት)
   const canManageData = isDirector || isRecordOffice || isViceAdmin || userRole === "school_admin"|| userRole === "super_admin";
-
-// እነዚህን ከ Dashboard component መጀመሪያ ላይ ይቀመጣል
-const [staff, setStaff] = useState<any[]>([]); // state
-
-useEffect(() => {
-  if (canManageData) { // አስተዳዳሪ ከሆኑ ብቻ ነው የሚታየው
-    async function fetchStaff() {
-      const { data } = await supabase
-        .from('staff_invites')
-        .select('*')
-        .eq('school_id', schoolId);
-      if (data) setStaff(data);
-    }
-    fetchStaff();
-  }
-}, [schoolId, canManageData]);
 
 
   // Check if student/parent has linked their profile
