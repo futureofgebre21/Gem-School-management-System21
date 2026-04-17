@@ -12,8 +12,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import StudentLinker from "@/components/StudentLinker";
-import { AddStaffModal } from "@/components/AddStaffModal"; 
-
+import { AddStaffModal } from "@/components/AddStaffModal";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input"; 
 
 export default function Dashboard() {
   const { user, schoolId, userRole } = useAuth();
@@ -596,6 +597,37 @@ const handleEdit = (staffMember: any) => {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-md bg-sidebar border-sidebar-border text-sidebar-foreground rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-bold text-xl text-sidebar-foreground">Edit Staff Invite</DialogTitle>
+            <DialogDescription className="text-sm text-sidebar-foreground/70">Update the details for {editingStaff?.first_name} {editingStaff?.last_name}.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-4">
+            <Input placeholder="First Name" value={editingStaff?.first_name || ""} onChange={e => setEditingStaff({...editingStaff, first_name: e.target.value})} className="bg-sidebar-accent border-sidebar-border" />
+            <Input placeholder="Last Name" value={editingStaff?.last_name || ""} onChange={e => setEditingStaff({...editingStaff, last_name: e.target.value})} className="bg-sidebar-accent border-sidebar-border" />
+            <Input placeholder="Phone" value={editingStaff?.phone || ""} onChange={e => setEditingStaff({...editingStaff, phone: e.target.value})} className="bg-sidebar-accent border-sidebar-border" />
+            <Input placeholder="Email" value={editingStaff?.email || ""} onChange={e => setEditingStaff({...editingStaff, email: e.target.value})} className="bg-sidebar-accent border-sidebar-border" />
+
+            <Button onClick={async () => {
+              // 4. የማዘመን ተግባር (Update Function)
+              const { error } = await supabase.from('staff_invites').update(editingStaff).eq('id', editingStaff.id);
+              if (!error) {
+                toast.success("Staff details updated!");
+                setStaff(staff.map(s => s.id === editingStaff.id ? editingStaff : s)); // ስክሪኑን አድስ
+                setIsEditModalOpen(false); // ሞዳሉን ዝጋ
+              } else {
+                toast.error("Update failed: " + error.message);
+              }
+            }} className="w-full bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
