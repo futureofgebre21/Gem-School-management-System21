@@ -119,6 +119,55 @@ if (teacher.user_id) {
   return;
 }
 
+const handleStaffVerify = async () => {
+  if (!schoolCode.trim() || !staffInviteCode.trim()) {
+    toast.error("Please enter both School Code and Invite Code");
+    return;
+  }
+  setLoading(true);
+  try {
+    // 1. ትምህርት ቤቱን በኮዱ መፈለግ
+    const { data: schoolData, error: schoolError } = await supabase.rpc("get_school_by_code", { _code: schoolCode.trim() });
+    const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
+
+    if (schoolError || !school) {
+      toast.error("Invalid school code.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. የጥሪ ኮዱን (Invite Code) ማረጋገጥ
+    const { data: invite, error: inviteError } = await supabase
+      .from("staff_invites")
+      .select("*")
+      .eq("school_id", school.id)
+      .eq("invite_code", staffInviteCode.trim().toUpperCase())
+      .eq("target_role", selectedRole)
+      .maybeSingle();
+
+    if (inviteError || !invite) {
+      toast.error("Invalid Invite Code or Role mismatch.");
+      setLoading(false);
+      return;
+    }
+
+    // 3. ኮዱ ትክክል ከሆነ ፕሮፋይሉን ማዘመን እና ሮል መስጠት
+    await supabase.from("profiles").update({ school_id: school.id }).eq("id", user?.id);
+    
+    // የጥሪ ኮዱን ከጥቅም ውጭ ለማድረግ መሰረዝ (አማራጭ ነው ግን ይመከራል)
+    await supabase.from("staff_invites").delete().eq("id", invite.id);
+
+    // ሮል መስጠት (user_assignments ላይ)
+    await assignRole(school.id, selectedRole);
+
+  } catch (error: any) {
+    toast.error("Verification failed: " + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
       const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
 
       // 🕵️ መርማሪ መስመር 2: ዳታቤዙ ውስጥ ለመፈለግ የያዘው መረጃ ምን ይመስላል?
