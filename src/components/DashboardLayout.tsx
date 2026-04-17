@@ -14,6 +14,36 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// በ DashboardLayout.tsx ውስጥ በ navItems ፈንታ ይህንን ተካው
+
+const navItems = [
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director", "vice_academic", "vice_admin"] },
+  { to: "/dashboard/students", icon: Users, label: "Students", roles: ["super_admin", "school_admin"] },
+  { to: "/dashboard/teachers", icon: UserCog, label: "Teachers", roles: ["super_admin", "school_admin"] },
+  { to: "/dashboard/schools", icon: School, label: "Schools", roles: ["super_admin"] },
+  
+  // 1. ለአካዳሚክ ስልጣን ላላቸው ሰራተኞች የሚታዩ
+  { to: "/dashboard/academics", icon: Layers, label: "Academics", roles: ["super_admin", "school_admin", "director", "vice_academic"] },
+  { to: "/dashboard/question-bank", icon: BookOpen, label: "Question Bank", roles: ["super_admin", "school_admin", "teacher", "director", "vice_academic"] },
+  { to: "/dashboard/exam-management", icon: ClipboardList, label: "Exam Management", roles: ["super_admin", "school_admin", "teacher", "director", "vice_academic"] },
+  
+  // 2. ለሁሉም የሚታዩ ( attendance በስራ ፈቃድ ለየብቻ ይጠበቃል)
+  { to: "/dashboard/attendance", icon: Calendar, label: "Attendance", roles: ["super_admin", "school_admin", "teacher", "student", "director", "vice_admin", "vice_academic"] },
+  
+  // 3. ለዳይሬክተር እና ለቪፒ አድሚን ብቻ
+  { to: "/dashboard/fees", icon: DollarSign, label: "Finance & Casher", roles: ["super_admin", "director", "vice_admin"] },
+  { to: "/dashboard/hr", icon: UserCheck, label: "HR Management", roles: ["super_admin", "director", "vice_admin"] },
+  
+  // 4. የተማሪ ክፍሎች
+  { to: "/dashboard/grades", icon: FileText, label: "My Grades", roles: ["student"] },
+  { to: "/dashboard/exam-practice", icon: GraduationCap, label: "Exam Practice", roles: ["student"] },
+  
+  // 5. የአስተዳደር ክፍሎች
+  { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements", roles: ["super_admin", "school_admin", "director"] },
+  { to: "/dashboard/import", icon: FileUp, label: "Import Data", roles: ["super_admin", "school_admin", "director"] },
+  { to: "/dashboard/support", icon: HelpCircle, label: "Support", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director"] },
+];
+
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "school_admin", "teacher", "student", "parent"] },
   { to: "/dashboard/students", icon: Users, label: "Students", roles: ["super_admin", "school_admin"] },
@@ -80,7 +110,51 @@ export default function DashboardLayout() {
             );
           })}
         </nav>
+
+        {/* 2. ዳይሬክተሩ ወይም ቪፒው ሰራተኛ ለመጨመር የሚጠቀሙበት በአረንጓዴ የተሞላ በተን */}
+        {schoolId && (isDirector || isViceAdmin) && (
+          <div className="p-3 mt-auto border-t border-sidebar-border/50">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="w-full flex items-center justify-center gap-2.5 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 rounded-lg py-2.5 font-semibold text-sm shadow-md transition-all active:scale-[0.98]">
+                  <Plus className="w-4 h-4" />
+                  Add New Staff
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72 p-2 bg-sidebar border-sidebar-border text-sidebar-foreground shadow-2xl rounded-xl animate-scale-in">
+                
+                {/* ለዳይሬክተር ብቻ */}
+                {isDirector && (
+                  <>
+                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                      <AddStaffModal role="record_office" schoolId={schoolId} label="Add Record Office" />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                      <AddStaffModal role="vice_admin" schoolId={schoolId} label="Add Vice Admin" />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                      <AddStaffModal role="vice_academic" schoolId={schoolId} label="Add Vice Academic" />
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {/* ለቪፒ አድሚን ብቻ */}
+                {isViceAdmin && (
+                  <>
+                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                      <AddStaffModal role="human_resource" schoolId={schoolId} label="Add HR Manager" />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                      <AddStaffModal role="casher" schoolId={schoolId} label="Add Casher" />
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </aside>
+
 
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} />
