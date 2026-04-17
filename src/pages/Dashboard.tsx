@@ -45,6 +45,23 @@ const isAdmin = userRole === "school_admin" || userRole === "super_admin" || use
   // ማንኛውም የአስተዳደር ስራ የሚሰራ ሰው (Quick Actions ለማሳየት)
   const canManageData = isDirector || isRecordOffice || isViceAdmin || userRole === "school_admin"|| userRole === "super_admin";
 
+// እነዚህን ከ Dashboard component መጀመሪያ ላይ ይቀመጣል
+const [staff, setStaff] = useState<any[]>([]); // state
+
+useEffect(() => {
+  if (canManageData) { // አስተዳዳሪ ከሆኑ ብቻ ነው የሚታየው
+    async function fetchStaff() {
+      const { data } = await supabase
+        .from('staff_invites')
+        .select('*')
+        .eq('school_id', schoolId);
+      if (data) setStaff(data);
+    }
+    fetchStaff();
+  }
+}, [schoolId, canManageData]);
+
+
   // Check if student/parent has linked their profile
   useEffect(() => {
     if ((isStudent || isParent) && user) {
@@ -81,20 +98,6 @@ const fetchStudentData = async () => {
   
   setStudentGrades(grades ?? []);
  
-// staff screen ላይ እንዲታይ ማድረግ
-const [staff, setStaff] = useState([]);
-
-useEffect(() => {
-  async function fetchStaff() {
-    const { data, error } = await supabase
-      .from('staff_invites')
-      .select('*')
-      .eq('school_id', schoolId); // የአሁኑን ትምህርት ቤት ሰራተኞች ብቻ
-      
-    if (data) setStaff(data);
-  }
-  fetchStaff();
-}, [schoolId]);
 
 
     
@@ -480,7 +483,26 @@ useEffect(() => {
 </div>
 
 
-      
+      {/* የሰራተኞች ዝርዝር ማሳያ */}
+{canManageData && staff.length > 0 && (
+  <Card className="shadow-card mt-6">
+    <CardHeader><CardTitle>Recent Staff Invites</CardTitle></CardHeader>
+    <CardContent>
+      <Table>
+        <TableBody>
+          {staff.map((s) => (
+            <TableRow key={s.id}>
+              <TableCell>{s.first_name} {s.last_name}</TableCell>
+              <TableCell>{s.target_role}</TableCell>
+              <TableCell>{s.invite_code}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </CardContent>
+  </Card>
+)}
+
 
 
 
