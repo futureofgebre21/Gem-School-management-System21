@@ -415,74 +415,59 @@ const fetchStudentData = async () => {
           </Card>
         )}
       </div>
+  {/* Quick Actions - role filtered */}
+<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 
-      {/* Quick Actions - role filtered */}
-{/* 1. የሰራተኛ አስተዳደር (Staff Management) - ሰፋ ያለ ቦታ ይፈልጋል */}
-{(isDirector || isViceAdmin) && schoolId && (
-  <div className="grid grid -cols-2 sm:grid-cols-4 gap-3">
-    <h2 className="text-lg font-semibold text-foreground border-b pb-2">Staff Registration</h2>
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  {/* ለዳይሬክተሩ ብቻ የሚታዩ የAdd Staff በተኖች */}
+  {isDirector && (
+    <>
+      <AddStaffModal role="record_office" schoolId={schoolId!} />
+      <AddStaffModal role="vice_admin" schoolId={schoolId!} />
+      <AddStaffModal role="vice_academic" schoolId={schoolId!} />
+    </>
+  )}
+
+  {/* ለቪፒ አድሚን ብቻ የሚታዩ የHR እና Casher በተኖች */}
+  {isViceAdmin && (
+    <>
+      <AddStaffModal role="human_resource" schoolId={schoolId!} />
+      <AddStaffModal role="casher" schoolId={schoolId!} />
+    </>
+  )}
+
+  {/* ተማሪ መመዝገብ የሚችለው Record Office ብቻ ነው */}
+  {(isRecordOffice) && (
+    <Link to="/dashboard/students" className="p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors text-center group">
+      <Plus className="w-8 h-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
+      <p className="text-sm font-medium">Add Student</p>
+    </Link>
+  )}
+
+  {/* ክትትል ማየት ለሁሉም ሰራተኞች */}
+  <Link to="/dashboard/attendance" className="p-4 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-colors text-center group">
+    <Calendar className="w-8 h-8 mx-auto mb-2 text-secondary group-hover:scale-110 transition-transform" />
+    <p className="text-sm font-medium">Attendance</p>
+  </Link>
+
+  {/* መምህራንን መቆጣጠር ለ HR  ብቻ */}
+  {(isHR ) && (
+    <Link to="/dashboard/teachers" className="p-4 rounded-lg bg-success/10 hover:bg-success/20 transition-colors text-center group">
+      <UserCog className="w-8 h-8 mx-auto mb-2 text-success group-hover:scale-110 transition-transform" />
+      <p className="text-sm font-medium">Manage Teachers</p>
+    </Link>
+  )}
+
+  {/* ክፍያዎችን ማስተዳደር ለ Casher ብቻ */}
+  {(isCasher) && (
+    <Link to="/dashboard/finance" className="p-4 rounded-lg bg-warning/10 hover:bg-warning/20 transition-colors text-center group">
+      <TrendingUp className="w-8 h-8 mx-auto mb-2 text-warning group-hover:scale-110 transition-transform" />
+      <p className="text-sm font-medium">Fee payments</p>
+    </Link>
+  )}
+</div>
+
+
       
-      {/* ለዳይሬክተሩ ብቻ የሚታዩ */}
-      {isDirector && (
-        <>
-          <AddStaffModal role="record_office" schoolId={schoolId} />
-          <AddStaffModal role="vice_admin" schoolId={schoolId} />
-          <AddStaffModal role="vice_academic" schoolId={schoolId} />
-        </>
-      )}
-
-      {/* ለቪፒ አድሚን ብቻ የሚታዩ */}
-      {isViceAdmin && (
-        <>
-          <AddStaffModal role="human_resource" schoolId={schoolId} />
-          <AddStaffModal role="casher" schoolId={schoolId} />
-        </>
-      )}
-    </div>
-  </div>
-)}
-
-{/* 2. ፈጣን ማዘዣዎች (Quick Actions) - ለትናንሽ ሊንኮች የተሰራ */}
-{(canManageData || isHR || isCasher) && (
-  <div className="mb-4">
-    <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-
-      {/* ተማሪ መመዝገብ የሚችለው Record Office ብቻ ነው */}
-      {isRecordOffice && (
-        <Link to="/dashboard/students" className="p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors text-center group shadow-sm border border-primary/10">
-          <Plus className="w-8 h-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
-          <p className="text-sm font-medium">Add Student</p>
-        </Link>
-      )}
-
-      {/* ክትትል ማየት መብት ላላቸው አስተዳደሮች ብቻ */}
-      {canManageData && (
-        <Link to="/dashboard/attendance" className="p-4 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-colors text-center group shadow-sm border border-secondary/10">
-          <Calendar className="w-8 h-8 mx-auto mb-2 text-secondary group-hover:scale-110 transition-transform" />
-          <p className="text-sm font-medium">Attendance</p>
-        </Link>
-      )}
-
-      {/* መምህራንን መቆጣጠር ለ HR ብቻ */}
-      {isHR && (
-        <Link to="/dashboard/teachers" className="p-4 rounded-lg bg-success/10 hover:bg-success/20 transition-colors text-center group shadow-sm border border-success/10">
-          <UserCog className="w-8 h-8 mx-auto mb-2 text-success group-hover:scale-110 transition-transform" />
-          <p className="text-sm font-medium">Manage Teachers</p>
-        </Link>
-      )}
-
-      {/* ክፍያዎችን ማስተዳደር ለ Casher ብቻ */}
-      {isCasher && (
-        <Link to="/dashboard/finance" className="p-4 rounded-lg bg-warning/10 hover:bg-warning/20 transition-colors text-center group shadow-sm border border-warning/10">
-          <TrendingUp className="w-8 h-8 mx-auto mb-2 text-warning group-hover:scale-110 transition-transform" />
-          <p className="text-sm font-medium">Fee Payments</p>
-        </Link>
-      )}
-    </div>
-  </div>
-)}
 
 
 
