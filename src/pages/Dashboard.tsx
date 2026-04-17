@@ -22,6 +22,9 @@ export default function Dashboard() {
   const [schoolStats, setSchoolStats] = useState<{ name: string; type: string; studentCount: number }[]>([]);
 
 const [staff, setStaff] = useState<any[]>([]); //
+const [editingStaff, setEditingStaff] = useState<any | null>(null);
+const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
 
   // Student-specific state
   const [studentGrades, setStudentGrades] = useState<any[]>([]);
