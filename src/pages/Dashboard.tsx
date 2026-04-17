@@ -195,6 +195,7 @@ const fetchStudentData = async () => {
       toast.success("School code copied!");
     }
   };
+
 const handleDelete = async (id: string) => {
   if (confirm("Are you shure delete this admin?")) {
     const { error } = await supabase.from('staff_invites').delete().eq('id', id);
@@ -205,6 +206,12 @@ const handleDelete = async (id: string) => {
       toast.error("can not delete");
     }
   }
+};
+
+
+const handleEdit = (staffMember: any) => {
+  setEditingStaff(staffMember); // የተመረጠውን ሰራተኛ መረጃ ያዝ
+  setIsEditModalOpen(true); // ሞዳሉን ክፈት
 };
 
 
