@@ -48,17 +48,33 @@ const isAdmin = userRole === "school_admin" || userRole === "super_admin" || use
   const canManageData = isDirector || isRecordOffice || isViceAdmin || userRole === "school_admin"|| userRole === "super_admin";
 
 useEffect(() => {
-  if (canManageData) { // አስተዳዳሪ ከሆኑ ብቻ ነው የሚታየው
-    async function fetchStaff() {
-      const { data } = await supabase
-        .from('staff_invites')
-        .select('*')
-        .eq('school_id', schoolId);
-      if (data) setStaff(data);
+  if (!schoolId) return;
+
+  const fetchStaff = async () => {
+    const { data, error } = await supabase
+      .from('staff_invites')
+      .select('*')
+      .eq('school_id', schoolId);
+      
+    if (error) {
+      // ስህተት ካለ በስክሪኑ ላይ እንዲታይ
+      toast.error("መረጃ ማምጣት አልተቻለም: " + error.message);
+    } else {
+      // ዳታ ካለ ወደ state ይገባል
+      setStaff(data || []);
+      
+      // ዳታው ባዶ ከሆነ ለምን እንደሆነ ለማወቅ
+      if (data.length === 0) {
+        toast.info("ምንም ሰራተኛ አልተመዘገበም (ስክሪኑ ላይ አይታይም)");
+      } else {
+        toast.success(data.length + " ሰራተኞች ተገኝተዋል!");
+      }
     }
-    fetchStaff();
-  }
-}, [schoolId, canManageData]);
+  };
+
+  fetchStaff();
+}, [schoolId]);
+
   // Check if student/parent has linked their profile
   useEffect(() => {
     if ((isStudent || isParent) && user) {
