@@ -14,7 +14,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// በ DashboardLayout.tsx ውስጥ በ navItems ፈንታ ይህንን ተካው
+
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director", "vice_academic", "vice_admin"] },
@@ -44,23 +44,6 @@ const navItems = [
   { to: "/dashboard/support", icon: HelpCircle, label: "Support", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director"] },
 ];
 
-const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "school_admin", "teacher", "student", "parent"] },
-  { to: "/dashboard/students", icon: Users, label: "Students", roles: ["super_admin", "school_admin"] },
-  { to: "/dashboard/teachers", icon: UserCog, label: "Teachers", roles: ["super_admin", "school_admin"] },
-  { to: "/dashboard/schools", icon: School, label: "Schools", roles: ["super_admin", "school_admin"] },
-  { to: "/dashboard/academics", icon: Layers, label: "Academics", roles: ["super_admin", "school_admin"] },
-  { to: "/dashboard/attendance", icon: Calendar, label: "Attendance", roles: ["super_admin", "school_admin", "teacher", "student"] },
-  { to: "/dashboard/grades", icon: FileText, label: "Grades", roles: ["super_admin", "school_admin", "teacher", "student"] },
-  { to: "/dashboard/fees", icon: DollarSign, label: "Fees", roles: ["super_admin", "school_admin"] },
-  { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements", roles: ["super_admin", "school_admin"] },
-  { to: "/dashboard/parent", icon: Home, label: "Parent Portal", roles: ["parent"] },
-  { to: "/dashboard/import", icon: FileUp, label: "Import Data", roles: ["super_admin", "school_admin"] },
-  { to: "/dashboard/question-bank", icon: BookOpen, label: "Question Bank", roles: ["super_admin", "school_admin", "teacher"] },
-  { to: "/dashboard/exam-management", icon: ClipboardList, label: "Exam Management", roles: ["super_admin", "school_admin", "teacher"] },
-  { to: "/dashboard/exam-practice", icon: GraduationCap, label: "Model Exams", roles: ["super_admin", "school_admin", "teacher", "student"] },
-  { to: "/dashboard/support", icon: HelpCircle, label: "Support", roles: ["super_admin", "school_admin", "teacher", "student", "parent"] },
-];
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
