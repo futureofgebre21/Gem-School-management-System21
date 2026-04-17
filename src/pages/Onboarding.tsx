@@ -338,7 +338,7 @@ if (updateError) {
   if (roleValue === "director") {
     setStep("school-create");
   } else {
-    setStep("school-code");
+    setStep("staff-verify");
   }
 }}
 
