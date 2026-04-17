@@ -507,34 +507,42 @@ const handleEdit = (staffMember: any) => {
   )}
 
   {/* ተማሪ መመዝገብ የሚችለው Record Office ብቻ ነው */}
-  {(isRecordOffice) && (
+    
+  {canAccess('add_student', userRole) && (
     <Link to="/dashboard/students" className="p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors text-center group">
       <Plus className="w-8 h-8 mx-auto mb-2 text-primary group-hover:scale-110 transition-transform" />
       <p className="text-sm font-medium">Add Student</p>
     </Link>
   )}
 
+
   {/* ክትትል ማየት ለሁሉም ሰራተኞች */}
-  <Link to="/dashboard/attendance" className="p-4 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-colors text-center group">
-    <Calendar className="w-8 h-8 mx-auto mb-2 text-secondary group-hover:scale-110 transition-transform" />
-    <p className="text-sm font-medium">Attendance</p>
-  </Link>
+    {/* 👇 2. ክትትል ማየት ለተፈቀደላቸው ብቻ (Record Office እንዳያየው ተቆልፏል) 👇 */}
+  {canAccess('view_attendance', userRole) && (
+    <Link to="/dashboard/attendance" className="p-4 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-colors text-center group">
+      <Calendar className="w-8 h-8 mx-auto mb-2 text-secondary group-hover:scale-110 transition-transform" />
+      <p className="text-sm font-medium">Attendance</p>
+    </Link>
+  )}
+
 
   {/* መምህራንን መቆጣጠር ለ HR  ብቻ */}
-  {(isHR ) && (
+  {canAccess('add_teacher', userRole) && (
     <Link to="/dashboard/teachers" className="p-4 rounded-lg bg-success/10 hover:bg-success/20 transition-colors text-center group">
       <UserCog className="w-8 h-8 mx-auto mb-2 text-success group-hover:scale-110 transition-transform" />
       <p className="text-sm font-medium">Manage Teachers</p>
     </Link>
   )}
 
-  {/* ክፍያዎችን ማስተዳደር ለ Casher ብቻ */}
-  {(isCasher) && (
+
+    {/* ክፍያዎችን ማስተዳደር */}
+  {canAccess('manage_finance', userRole) && (
     <Link to="/dashboard/finance" className="p-4 rounded-lg bg-warning/10 hover:bg-warning/20 transition-colors text-center group">
       <TrendingUp className="w-8 h-8 mx-auto mb-2 text-warning group-hover:scale-110 transition-transform" />
       <p className="text-sm font-medium">Fee payments</p>
     </Link>
   )}
+
 </div>
 
 
