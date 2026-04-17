@@ -52,6 +52,8 @@ export default function Onboarding() {
   const [teacherSchoolCode, setTeacherSchoolCode] = useState("");
   const [teacherId, setTeacherId] = useState("");
   const [teacherVerifying, setTeacherVerifying] = useState(false);
+const [staffInviteCode, setStaffInviteCode] = useState("");
+
 
   const lookupSchoolCode = async () => {
     if (!schoolCode.trim()) { toast.error("Please enter a school code"); return; }
