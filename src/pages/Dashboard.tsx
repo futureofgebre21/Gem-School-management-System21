@@ -51,6 +51,18 @@ const isAdmin = userRole === "school_admin" || userRole === "super_admin" || use
   // ማንኛውም የአስተዳደር ስራ የሚሰራ ሰው (Quick Actions ለማሳየት)
   const canManageData = isDirector || isRecordOffice || isViceAdmin || userRole === "school_admin"|| userRole === "super_admin";
 
+const canAccess = (action: string, userRole: string) => {
+  const permissions: Record<string, string[]> = {
+    'add_student': ['record_office'],
+    'add_teacher': ['record_office', 'human_resource'],
+    'manage_grades': ['record_office'],
+    'view_attendance': ['vice_academic', 'vice_admin', 'human_resource'],
+    'manage_staff': ['vice_admin'],
+    'manage_finance': ['casher'],
+  };
+  return permissions[action]?.includes(userRole);
+};
+
 useEffect(() => {
   if (!schoolId) return;
 
