@@ -216,10 +216,22 @@ if (updateError) {
   };
 
 
-  const handleJoinSchool = () => {
-    if (!foundSchool) { toast.error("Please look up a valid school code first"); return; }
-    assignRole(foundSchool.id, selectedRole);
-  };
+  
+const handleJoinSchool = () => {
+  if (!foundSchool) { toast.error("Please look up a valid school code first"); return; }
+
+  // 🛡️ የሰራተኞች ዝርዝር (እነዚህ ሰዎች ያለ Invite Code መግባት የለባቸውም)
+  const restrictedRoles = ["record_office", "vice_academic", "vice_admin", "human_resource", "casher"];
+
+  if (restrictedRoles.includes(selectedRole)) {
+    toast.error("Staff members must use an Invite Code to join.");
+    setStep("staff-verify"); // ወደ ትክክለኛው የverification ገጽ መልሳቸው
+    return;
+  }
+
+  // ተማሪ ወይም ወላጅ ከሆኑ ብቻ ነው በቀጥታ እንዲያልፉ የሚፈቀደው
+  assignRole(foundSchool.id, selectedRole);
+};
 
     const handleCreateSchool = async () => {
     if (!newSchool.name.trim()) { toast.error("School name is required"); return; }
