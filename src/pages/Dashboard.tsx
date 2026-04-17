@@ -619,18 +619,30 @@ const handleEdit = (staffMember: any) => {
             <Input placeholder="Email" value={editingStaff?.email || ""} onChange={e => setEditingStaff({...editingStaff, email: e.target.value})} className="bg-sidebar-accent border-sidebar-border" />
 
             <Button onClick={async () => {
-              // 4. የማዘመን ተግባር (Update Function)
-              const { error } = await supabase.from('staff_invites').update(editingStaff).eq('id', editingStaff.id);
-              if (!error) {
-                toast.success("Staff details updated!");
-                setStaff(staff.map(s => s.id === editingStaff.id ? editingStaff : s)); // ስክሪኑን አድስ
-                setIsEditModalOpen(false); // ሞዳሉን ዝጋ
-              } else {
-                toast.error("Update failed: " + error.message);
-              }
-            }} className="w-full bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90">
-              Save Changes
-            </Button>
+  // 1. ዳታቤዝ ላይ ማስተካከል (Update)
+  const { error } = await supabase
+    .from('staff_invites')
+    .update({
+      first_name: editingStaff.first_name,
+      last_name: editingStaff.last_name,
+      phone: editingStaff.phone,
+      email: editingStaff.email
+    })
+    .eq('id', editingStaff.id);
+
+  if (error) {
+    toast.error("Can't update: " + error.message);
+  } else {
+    // 2. ስክሪኑ ላይ ያለውን ዝርዝር ማዘመን
+    setStaff(staff.map(s => s.id === editingStaff.id ? editingStaff : s));
+    toast.success("Update successfully!");
+    setIsEditModalOpen(false);
+  }
+}} 
+className="w-full bg-primary text-white">
+  Save Changes
+</Button>
+
           </div>
         </DialogContent>
       </Dialog>
