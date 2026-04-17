@@ -56,4 +56,4 @@ export function AddStaffModal({ role, schoolId }: { role: string, schoolId: stri
       )}
     </div>
   );
-}
+
