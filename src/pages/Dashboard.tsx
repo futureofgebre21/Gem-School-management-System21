@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Users, UserCog, School, TrendingUp, UserCheck, UserX,
-  Copy, Plus, Calendar, Hash, FileUp, FileText, BarChart3,
+  Copy, Plus, Calendar, Hash, FileUp, FileText, BarChart3,Trash2, Edit,
 } from "lucide-react";
 import { toast } from "sonner";
 import StudentLinker from "@/components/StudentLinker";
@@ -520,9 +520,16 @@ const fetchStudentData = async () => {
         <TableCell>{s.phone}</TableCell> 
         <TableCell>{s.email}</TableCell> 
         <TableCell>{s.invite_code}</TableCell>
-        <TableCell>
-           {/* እዚህ ጋር Edit እና Delete በተኖች ይገባሉ */}
-        </TableCell>
+        
+           <TableCell className="flex gap-2">
+  <Button variant="ghost" size="icon" onClick={() => handleEdit(s)}>
+    <Edit className="w-4 h-4 text-blue-500" />
+  </Button>
+  <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}>
+    <Trash2 className="w-4 h-4 text-red-500" />
+  </Button>
+</TableCell>
+        
       </TableRow>
     ))}
   </TableBody>
