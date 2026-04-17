@@ -81,7 +81,20 @@ const fetchStudentData = async () => {
   
   setStudentGrades(grades ?? []);
  
+// staff screen ላይ እንዲታይ ማድረግ
+const [staff, setStaff] = useState([]);
 
+useEffect(() => {
+  async function fetchStaff() {
+    const { data, error } = await supabase
+      .from('staff_invites')
+      .select('*')
+      .eq('school_id', schoolId); // የአሁኑን ትምህርት ቤት ሰራተኞች ብቻ
+      
+    if (data) setStaff(data);
+  }
+  fetchStaff();
+}, [schoolId]);
 
 
     
