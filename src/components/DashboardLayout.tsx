@@ -48,7 +48,11 @@ const navItems = [
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, userRole, signOut } = useAuth();
+    const { user, userRole, signOut, schoolId } = useAuth(); 
+  
+  const isDirector = userRole === "director";      
+  const isViceAdmin = userRole === "vice_admin";    
+
   const location = useLocation();
 
   const initials = user?.user_metadata?.full_name
