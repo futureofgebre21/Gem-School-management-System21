@@ -114,13 +114,13 @@ export default function DashboardLayout() {
                 {/* ለዳይሬክተር ብቻ */}
                 {isDirector && (
                   <>
-                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
                       <AddStaffModal role="record_office" schoolId={schoolId} label="Add Record Office" />
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
                       <AddStaffModal role="vice_admin" schoolId={schoolId} label="Add Vice Admin" />
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
                       <AddStaffModal role="vice_academic" schoolId={schoolId} label="Add Vice Academic" />
                     </DropdownMenuItem>
                   </>
