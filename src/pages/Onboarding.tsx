@@ -119,6 +119,53 @@ if (teacher.user_id) {
   return;
 }
 
+      const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
+
+      // 🕵️ መርማሪ መስመር 2: ዳታቤዙ ውስጥ ለመፈለግ የያዘው መረጃ ምን ይመስላል?
+      console.log("Searching Teacher with:", { school_id: school.id, teacher_id: teacherId.trim() });
+
+      const { data: teacher, error: teacherError } = await supabase.from("teachers")
+        .select("id, first_name, last_name,user_id")
+        .eq("school_id", school.id)
+        .ilike("teacher_id", teacherId.trim()) 
+        .maybeSingle();
+
+      // 🕵️ መርማሪ መስመር 3: ስህተቱ ምንድነው?
+      if (teacherError) {
+        console.error("Database Error Detail:", teacherError);
+      }
+
+      if (teacherError || !teacher) {
+        toast.error("Teacher not found. Check the console (F12) for details.");
+        setTeacherVerifying(false);
+        return;
+      }
+
+     
+        console.log("Updating teacher with User ID:", user?.id); 
+const { error: updateError } = await supabase
+  .from("teachers")
+  .update({ user_id: user?.id }) 
+  .eq("id", teacher.id)
+  .select(); // የሰራ መሆኑን ለማረጋገጥ select() መጨመር
+
+if (updateError) {
+  console.error("Update failed:", updateError.message);
+  toast.error("Do not connect data፦ " + updateError.message);
+  return;
+}
+
+      if (updateError) throw updateError;
+      await assignRole(school.id, "teacher");
+
+    } catch (error: any) {
+      console.error("Catch Block Error:", error);
+      toast.error(getUserFriendlyError(error));
+    } finally {
+      setTeacherVerifying(false);
+    }
+  };
+
 const handleStaffVerify = async () => {
   if (!schoolCode.trim() || !staffInviteCode.trim()) {
     toast.error("Please enter both School Code and Invite Code");
@@ -166,54 +213,6 @@ const handleStaffVerify = async () => {
     setLoading(false);
   }
 };
-
-
-      const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
-
-      // 🕵️ መርማሪ መስመር 2: ዳታቤዙ ውስጥ ለመፈለግ የያዘው መረጃ ምን ይመስላል?
-      console.log("Searching Teacher with:", { school_id: school.id, teacher_id: teacherId.trim() });
-
-      const { data: teacher, error: teacherError } = await supabase.from("teachers")
-        .select("id, first_name, last_name,user_id")
-        .eq("school_id", school.id)
-        .ilike("teacher_id", teacherId.trim()) 
-        .maybeSingle();
-
-      // 🕵️ መርማሪ መስመር 3: ስህተቱ ምንድነው?
-      if (teacherError) {
-        console.error("Database Error Detail:", teacherError);
-      }
-
-      if (teacherError || !teacher) {
-        toast.error("Teacher not found. Check the console (F12) for details.");
-        setTeacherVerifying(false);
-        return;
-      }
-
-     
-        console.log("Updating teacher with User ID:", user?.id); 
-const { error: updateError } = await supabase
-  .from("teachers")
-  .update({ user_id: user?.id }) 
-  .eq("id", teacher.id)
-  .select(); // የሰራ መሆኑን ለማረጋገጥ select() መጨመር
-
-if (updateError) {
-  console.error("Update failed:", updateError.message);
-  toast.error("Do not connect data፦ " + updateError.message);
-  return;
-}
-
-      if (updateError) throw updateError;
-      await assignRole(school.id, "teacher");
-
-    } catch (error: any) {
-      console.error("Catch Block Error:", error);
-      toast.error(getUserFriendlyError(error));
-    } finally {
-      setTeacherVerifying(false);
-    }
-  };
 
 
   
@@ -335,7 +334,7 @@ const handleJoinSchool = () => {
       <CardTitle className="text-xl">Admin Position</CardTitle>
     </CardHeader>
     <CardContent className="space-y-3">
-      {["Director", "Recored office", "Vice Academic", "Vice Admin", "Human Resource", "Casher"].map((label) => {
+      {["Director", "Record office", "Vice Academic", "Vice Admin", "Human Resource", "Casher"].map((label) => {
         // 1. መጀመሪያ ስሙን ለዳታቤዝ በሚሆን መልኩ ማስተካከል (ለምሳሌ፡ record_office)
         const roleValue = label.toLowerCase().replace(/\s+/g, "_");
 
