@@ -502,16 +502,32 @@ const fetchStudentData = async () => {
     <CardHeader><CardTitle>Recent Staff Invites</CardTitle></CardHeader>
     <CardContent>
       <Table>
-        <TableBody>
-          {staff.map((s) => (
-            <TableRow key={s.id}>
-              <TableCell>{s.first_name} {s.last_name}</TableCell>
-              <TableCell>{s.target_role}</TableCell>
-              <TableCell>{s.invite_code}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Name</TableHead>
+      <TableHead>Role</TableHead>
+      <TableHead>Phone</TableHead> {/* አዲስ */}
+      <TableHead>Email</TableHead> {/* አዲስ */}
+      <TableHead>Code</TableHead>
+      <TableHead>Actions</TableHead> {/* አዲስ */}
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {staff.map((s) => (
+      <TableRow key={s.id}>
+        <TableCell>{s.first_name} {s.last_name}</TableCell>
+        <TableCell>{s.target_role}</TableCell>
+        <TableCell>{s.phone}</TableCell> 
+        <TableCell>{s.email}</TableCell> 
+        <TableCell>{s.invite_code}</TableCell>
+        <TableCell>
+           {/* እዚህ ጋር Edit እና Delete በተኖች ይገባሉ */}
+        </TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
+
     </CardContent>
   </Card>
 )}
