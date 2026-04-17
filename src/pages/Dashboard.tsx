@@ -199,15 +199,22 @@ const fetchStudentData = async () => {
 
 const handleDelete = async (id: string) => {
   if (confirm("Are you shure delete this admin?")) {
-    const { error } = await supabase.from('staff_invites').delete().eq('id', id);
-    if (!error) {
-      toast.success("Delete successfull!");
-      setStaff(staff.filter(s => s.id !== id)); // ስክሪኑ ላይ ወዲያው እንዲጠፋ
+    // 1. ዳታቤዝ ላይ መሰረዝ
+    const { error } = await supabase
+      .from('staff_invites')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast.error("Can't delete: " + error.message);
     } else {
-      toast.error("can not delete");
+      // 2. ስክሪኑ ላይ ያለውን ዝርዝር ማዘመን
+      setStaff(staff.filter(s => s.id !== id));
+      toast.success("Successfully deleted!");
     }
   }
 };
+
 
 
 const handleEdit = (staffMember: any) => {
