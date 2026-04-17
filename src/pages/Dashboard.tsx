@@ -58,16 +58,16 @@ useEffect(() => {
       
     if (error) {
       // ስህተት ካለ በስክሪኑ ላይ እንዲታይ
-      toast.error("መረጃ ማምጣት አልተቻለም: " + error.message);
+      toast.error("Can't attainment this data: " + error.message);
     } else {
       // ዳታ ካለ ወደ state ይገባል
       setStaff(data || []);
       
       // ዳታው ባዶ ከሆነ ለምን እንደሆነ ለማወቅ
       if (data.length === 0) {
-        toast.info("ምንም ሰራተኛ አልተመዘገበም (ስክሪኑ ላይ አይታይም)");
+        toast.info("Do not register admin (not display screen)");
       } else {
-        toast.success(data.length + " ሰራተኞች ተገኝተዋል!");
+        toast.success(data.length + " successfull admin!");
       }
     }
   };
@@ -192,6 +192,18 @@ const fetchStudentData = async () => {
       toast.success("School code copied!");
     }
   };
+const handleDelete = async (id: string) => {
+  if (confirm("Are you shure delete this admin?")) {
+    const { error } = await supabase.from('staff_invites').delete().eq('id', id);
+    if (!error) {
+      toast.success("Delete successfull!");
+      setStaff(staff.filter(s => s.id !== id)); // ስክሪኑ ላይ ወዲያው እንዲጠፋ
+    } else {
+      toast.error("can not delete");
+    }
+  }
+};
+
 
   // Show linker for unlinked students/parents
   if ((isStudent || isParent) && linkedStudentId === null) {
