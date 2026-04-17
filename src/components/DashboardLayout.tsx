@@ -18,32 +18,41 @@ import {
 
 
 const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director", "vice_academic", "vice_admin"] },
-  { to: "/dashboard/students", icon: Users, label: "Students", roles: ["super_admin", "school_admin"] },
-  { to: "/dashboard/teachers", icon: UserCog, label: "Teachers", roles: ["super_admin", "school_admin"] },
+  // 1. ሁሉም ሰው ዳሽቦርድ ማየት አለበት
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director", "vice_academic", "vice_admin", "record_office", "human_resource", "casher"] },
+  
+  // 2. Record Office የሚያያቸው
+  { to: "/dashboard/students", icon: Users, label: "Students", roles: ["super_admin", "school_admin", "record_office"] },
+  
+  // 3. Record Office እና Human Resource የሚያዩት
+  { to: "/dashboard/teachers", icon: UserCog, label: "Teachers", roles: ["super_admin", "school_admin", "record_office", "human_resource"] },
+  
   { to: "/dashboard/schools", icon: School, label: "Schools", roles: ["super_admin"] },
-  
-  // 1. ለአካዳሚክ ስልጣን ላላቸው ሰራተኞች የሚታዩ
-  { to: "/dashboard/academics", icon: Layers, label: "Academics", roles: ["super_admin", "school_admin", "director", "vice_academic"] },
+
+  // 4. አካዳሚክ እና Grades (Record office እና Vice Academic)
+  { to: "/dashboard/academics", icon: Layers, label: "Academics", roles: ["super_admin", "school_admin", "director", "vice_academic", "record_office"] },
   { to: "/dashboard/question-bank", icon: BookOpen, label: "Question Bank", roles: ["super_admin", "school_admin", "teacher", "director", "vice_academic"] },
-  { to: "/dashboard/exam-management", icon: ClipboardList, label: "Exam Management", roles: ["super_admin", "school_admin", "teacher", "director", "vice_academic"] },
+  { to: "/dashboard/exam-management", icon: ClipboardList, label: "Exam Management", roles: ["super_admin", "school_admin", "teacher", "director", "vice_academic", "record_office"] },
+
+  // 5. Attendance (Vice Academic, Vice Admin እና HR ማየት አለባቸው)
+  { to: "/dashboard/attendance", icon: Calendar, label: "Attendance", roles: ["super_admin", "school_admin", "teacher", "student", "director", "vice_admin", "vice_academic", "human_resource"] },
+
+  // 6. ለ Casher እና Admin ብቻ
+  { to: "/dashboard/fees", icon: DollarSign, label: "Finance & Casher", roles: ["super_admin", "director", "vice_admin", "casher"] },
   
-  // 2. ለሁሉም የሚታዩ ( attendance በስራ ፈቃድ ለየብቻ ይጠበቃል)
-  { to: "/dashboard/attendance", icon: Calendar, label: "Attendance", roles: ["super_admin", "school_admin", "teacher", "student", "director", "vice_admin", "vice_academic"] },
-  
-  // 3. ለዳይሬክተር እና ለቪፒ አድሚን ብቻ
-  { to: "/dashboard/fees", icon: DollarSign, label: "Finance & Casher", roles: ["super_admin", "director", "vice_admin"] },
-  { to: "/dashboard/hr", icon: UserCheck, label: "HR Management", roles: ["super_admin", "director", "vice_admin"] },
-  
-  // 4. የተማሪ ክፍሎች
+  // 7. የሰው ሃይል (HR) ማኔጅመንት
+  { to: "/dashboard/hr", icon: UserCheck, label: "HR Management", roles: ["super_admin", "director", "vice_admin", "human_resource"] },
+
+  // የተማሪ ክፍሎች
   { to: "/dashboard/grades", icon: FileText, label: "My Grades", roles: ["student"] },
   { to: "/dashboard/exam-practice", icon: GraduationCap, label: "Exam Practice", roles: ["student"] },
-  
-  // 5. የአስተዳደር ክፍሎች
-  { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements", roles: ["super_admin", "school_admin", "director"] },
-  { to: "/dashboard/import", icon: FileUp, label: "Import Data", roles: ["super_admin", "school_admin", "director"] },
-  { to: "/dashboard/support", icon: HelpCircle, label: "Support", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director"] },
+
+  // የአስተዳደር ክፍሎች
+  { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements", roles: ["super_admin", "school_admin", "director", "record_office"] },
+  { to: "/dashboard/import", icon: FileUp, label: "Import Data", roles: ["super_admin", "school_admin", "director", "record_office"] },
+  { to: "/dashboard/support", icon: HelpCircle, label: "Support", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director", "record_office", "vice_academic", "vice_admin", "human_resource", "casher"] },
 ];
+
 
 
 export default function DashboardLayout() {
