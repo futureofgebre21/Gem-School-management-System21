@@ -26,6 +26,7 @@ const [staff, setStaff] = useState<any[]>([]); //
 const [editingStaff, setEditingStaff] = useState<any | null>(null);
 const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+const [attendanceDetails, setAttendanceDetails] = useState<any[]>([]);
 
   // Student-specific state
   const [studentGrades, setStudentGrades] = useState<any[]>([]);
@@ -33,6 +34,37 @@ const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [linkedStudentId, setLinkedStudentId] = useState<string | null | undefined>(undefined);
 
 const [attendanceDetails, setAttendanceDetails] = useState<any[]>([]);
+
+const linkTeacherProfile = async () => {
+    if (userRole === 'teacher' && user?.email) {
+      // 1. መምህሩ ቀድሞውኑ ሊንክ ተደርጓል ወይ?
+      const { data: existing } = await supabase
+        .from('teachers')
+        .select('id, user_id')
+        .eq('email', user.email.toLowerCase())
+        .single();
+
+      // existing ካለ እና user_id ባዶ ከሆነ ብቻ ነው ማስተካከል ያለብን
+      if (existing && !existing.user_id) {
+        // 2. በኢሜሉ ተፈልጎ ከተገኘ አሁን ባለው user.id ሊንክ ይደረጋል
+        const { error } = await supabase
+          .from('teachers')
+          .update({ user_id: user.id })
+          .eq('id', existing.id);
+          
+        if (!error) {
+          console.log("Teacher profile linked successfully!");
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (userRole === 'teacher' && user) {
+      linkTeacherProfile();
+    }
+  }, [user, userRole]); 
+  
 
 const isSuperAdmin = userRole === "super_admin";
   const isStudent = userRole === "student";
