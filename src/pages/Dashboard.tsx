@@ -33,9 +33,6 @@ const [attendanceDetails, setAttendanceDetails] = useState<any[]>([]);
   const [studentAttendance, setStudentAttendance] = useState<{ present: number; absent: number; late: number; total: number }>({ present: 0, absent: 0, late: 0, total: 0 });
   const [linkedStudentId, setLinkedStudentId] = useState<string | null | undefined>(undefined);
 
-const [attendanceDetails, setAttendanceDetails] = useState<any[]>([]);
-  
-
 const isSuperAdmin = userRole === "super_admin";
   const isStudent = userRole === "student";
   const isParent = userRole === "parent";
@@ -94,36 +91,40 @@ useEffect(() => {
 }, [schoolId]);
 
 
-const linkTeacherProfile = async () => {
-    if (userRole === 'teacher' && user?.email) {
-      // 1. መምህሩ ቀድሞውኑ ሊንክ ተደርጓል ወይ?
-      const { data: existing } = await supabase
-        .from('teachers')
-        .select('id, user_id')
-        .eq('email', user.email.toLowerCase())
-        .single();
+  // 1. መጀመሪያ linkTeacherProfile ፋንክሽኑን አስተካክል
+const linkTeacherProfile = useCallback(async () => {
+  if (userRole === 'teacher' && user?.email) {
+    console.log("Attempting to link teacher profile for:", user.email);
+    
+    // መጀመሪያ መምህሩን በኢሜሉ ፈልገው
+    const { data: teacherData, error: fetchError } = await supabase
+      .from('teachers')
+      .select('id, user_id, school_id')
+      .eq('email', user.email.toLowerCase())
+      .maybeSingle(); // single() ፈንታ maybeSingle() ተጠቀም ስህተት እንዳይወረውር
 
-      // existing ካለ እና user_id ባዶ ከሆነ ብቻ ነው ማስተካከል ያለብን
-      if (existing && !existing.user_id) {
-        // 2. በኢሜሉ ተፈልጎ ከተገኘ አሁን ባለው user.id ሊንክ ይደረጋል
-        const { error } = await supabase
-          .from('teachers')
-          .update({ user_id: user.id })
-          .eq('id', existing.id);
-          
-        if (!error) {
-          console.log("Teacher profile linked successfully!");
-        }
+    if (teacherData && !teacherData.user_id) {
+      // ተገኝቷል ግን ሊንክ አልተደረገም፣ አሁን ሊንክ አድርገው
+      const { error: updateError } = await supabase
+        .from('teachers')
+        .update({ user_id: user.id })
+        .eq('id', teacherData.id);
+
+      if (!updateError) {
+        toast.success("Profile linked! Redirecting...");
+        window.location.reload(); // 👈 ገጹን ሪፍሬሽ ማድረግ አስፈላጊ ነው ዳታው እንዲመጣ
       }
     }
-  };
+  }
+}, [user, userRole]);
 
-  useEffect(() => {
-    if (userRole === 'teacher' && user) {
-      linkTeacherProfile();
-    }
-  }, [user, userRole]); 
-  
+// 2. useEffect ውስጥ ጥራው
+useEffect(() => {
+  if (userRole === 'teacher' && user) {
+    linkTeacherProfile();
+  }
+}, [user, userRole, linkTeacherProfile]);
+
   // Check if student/parent has linked their profile
   useEffect(() => {
     if ((isStudent || isParent) && user) {
