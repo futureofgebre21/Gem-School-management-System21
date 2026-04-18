@@ -145,7 +145,7 @@ grade: t.grade ?? "",
                 <div><Label>Last Name *</Label><Input required value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
+                <div><Label>Email</Label><Input required type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
                 <div><Label>Phone</Label><Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} /></div>
               </div>
               <div><Label>Subjects (comma-separated)</Label><Input value={form.subjects} onChange={e => setForm({...form, subjects: e.target.value})} placeholder="Math, English, Science" /></div>
