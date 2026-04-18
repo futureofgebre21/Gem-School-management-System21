@@ -96,28 +96,30 @@ const { error: roleError } = await supabase.from("user_assignments")
 
 const handleTeacherVerify = async () => {
   if (!teacherSchoolCode.trim() || !teacherId.trim()) {
-    toast.error("Please enter both School Code and Teacher ID");
+    alert("እባክዎ School Code እና Teacher ID ያስገቡ");
     return;
   }
   
   setTeacherVerifying(true);
   
   try {
-    // 1. ትምህርት ቤቱን መፈለግ
+    // RPC ጥሪው
     const { data: schoolData, error: schoolError } = await supabase.rpc("get_school_by_code", { _code: teacherSchoolCode.trim() });
     
+    // 🚨 እውነተኛውን ስህተት የሚያሳይ ALERT
     if (schoolError) {
-      alert(`SCHOOL SEARCH ERROR:\n${schoolError.message}\nDetails: ${schoolError.details}`);
+      alert(`ዳታቤዝ ስህተት (RPC): \nMessage: ${schoolError.message} \nDetails: ${schoolError.details}`);
       return;
     }
+    
     if (!schoolData || (Array.isArray(schoolData) && schoolData.length === 0)) {
-      alert("Error: Invalid school code. No school found.");
+      alert("ትምህርት ቤት አልተገኘም (School Code ስህተት ሊሆን ይችላል)");
       return;
     }
     
     const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
 
-    // 2. መምህሩን መፈለግ
+    // መምህሩን መፈለግ
     const { data: teacher, error: teacherError } = await supabase
       .from("teachers")
       .select("id, first_name, last_name, user_id")
@@ -126,46 +128,41 @@ const handleTeacherVerify = async () => {
       .maybeSingle();
 
     if (teacherError) {
-      // 🚨 እዚህ ጋር የ Database Error ካለ በግልጽ ይነግርሃል (RLS Policy ስህተት ከሆነ እዚህ ይታያል)
-      alert(`TEACHER SEARCH ERROR:\nMessage: ${teacherError.message}\nDetails: ${teacherError.details}\nCode: ${teacherError.code}`);
+      alert(`መምህር መፈለጊያ ስህተት: \n${teacherError.message}`);
       return;
     }
     
     if (!teacher) {
-      alert("Teacher not found with this ID in the school.");
+      alert("ይህ መምህር በዚሁ ትምህርት ቤት አልተገኘም");
       return;
     }
 
-    // መለያው ሌላ ሰው መያዙን ማረጋገጥ (ቀድሞ የነበረውን teacher variable ተጠቀምን)
     if (teacher.user_id) {
-      alert("This teacher account is already connected to another user!");
+      alert("ይህ መምህር ቀድሞውኑ ከሌላ ተጠቃሚ ጋር ተገናኝቷል!");
       return;
     }
 
-    // 3. Update ማድረግ
-    console.log("Updating teacher with User ID:", user?.id);
-    const { data: updatedData, error: updateError } = await supabase
+    // Update
+    const { error: updateError } = await supabase
       .from("teachers")
       .update({ user_id: user?.id })
-      .eq("id", teacher.id)
-      .select();
+      .eq("id", teacher.id);
 
     if (updateError) {
-      // 🚨 Update ሲያደርግ ስህተት ካለ እዚህ ያሳያል
-      alert(`UPDATE FAILED:\nMessage: ${updateError.message}\nDetails: ${updateError.details}\nHint: ${updateError.hint}\nCode: ${updateError.code}`);
+      alert(`መረጃ ማዘመን አልተቻለም (Update Error): \n${updateError.message}`);
       return;
     }
 
-    alert("Success! Teacher connected successfully.");
+    alert("ስኬታማ! መምህሩ በትክክል ተገናኝቷል");
     await assignRole(school.id, "teacher");
 
   } catch (error: any) {
-    console.error("Catch Block Error:", error);
-    alert("SYSTEM ERROR:\n" + error.message);
+    alert("የስርዓት ችግር ተፈጥሯል: " + error.message);
   } finally {
     setTeacherVerifying(false);
   }
 };
+
 
    
 
