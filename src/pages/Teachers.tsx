@@ -86,6 +86,7 @@ let finalTeacherId = "";
     classes: form.classes.split(",").map(s => s.trim()).filter(Boolean),
     grade: form.grade, 
     school_id: schoolId,
+user_id: null,
     ...(finalTeacherId && { teacher_id: finalTeacherId }), // አዲስ ሲሆን ብቻ ID ይጨምራል
   };
 
