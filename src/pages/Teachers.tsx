@@ -52,60 +52,65 @@ export default function Teachers() {
 
   useEffect(() => { fetchTeachers(); }, [schoolId, search]);
 
+ 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!schoolId) { toast.error("No school assigned"); return; }
+    e.preventDefault();
+    if (!schoolId) { toast.error("No school assigned"); return; }
 
-  let finalTeacherId = "";
+    let finalTeacherId = "";
 
-  if (!editId) {
-    // 1. መምህራንን መቁጠር (ለ ID ቁጥር)
-    const { count } = await supabase
-      .from("teachers")
-      .select("*", { count: "exact", head: true })
-      .eq("school_id", schoolId);
+    if (!editId) {
+      const { count } = await supabase
+        .from("teachers")
+        .select("*", { count: "exact", head: true })
+        .eq("school_id", schoolId);
 
-    // 2. ID Generation (ቀለል ባለና አስተማማኝ መንገድ)
-    // የትምህርት ቤቱን ስም ከመፈለግ ይልቅ "TCH" መጠቀም ወይም 
-    // ከ schoolId የመጀመሪያዎቹን 3 ፊደላት መውሰድ ይሻላል
-    const prefix = "TCH"; 
-    finalTeacherId = `${prefix}-${String((count || 0) + 1).padStart(4, '0')}`;
-  }
-
-  const payload = {
-    first_name: form.first_name,
-    last_name: form.last_name,
-    email: form.email || null,
-    phone: form.phone || null,
-    subjects: form.subjects.split(",").map(s => s.trim()).filter(Boolean),
-    classes: form.classes.split(",").map(s => s.trim()).filter(Boolean),
-    grade: form.grade || "", // null እንዳይሆን "" ጨምረናል
-    school_id: schoolId,
-    status: "active", // 👈 ይህ የግድ መጨመር አለበት (Error 23502 የሚመጣው በዚህ ነው)
-    user_id: null,
-    ...(finalTeacherId && { teacher_id: finalTeacherId }),
-  };
-
-  if (editId) {
-    // Update ሲደረግ status እንዳይቀየር payload ን ለብቻ መለየት ትችላለህ
-    const { error } = await supabase.from("teachers").update(payload).eq("id", editId);
-    if (error) { toast.error(getUserFriendlyError(error)); return; }
-    toast.success("Teacher updated");
-  } else {
-    const { error } = await supabase.from("teachers").insert([payload]); // 👈 Array ውስጥ አድርገህ ላከው
-    if (error) { 
-      console.error("Insert Error:", error); // ለበለጠ ምርመራ
-      toast.error(getUserFriendlyError(error)); 
-      return; 
+      const prefix = "TCH";
+      finalTeacherId = `${prefix}-${String((count || 0) + 1).padStart(4, '0')}`;
     }
-    toast.success(`Teacher registered! ID: ${finalTeacherId}`);
-  }
 
-  setDialogOpen(false);
-  setForm(emptyForm);
-  setEditId(null);
-  fetchTeachers();
-};
+    const payload = {
+      first_name: form.first_name,
+      last_name: form.last_name,
+      email: form.email || null,
+      phone: form.phone || null,
+      subjects: form.subjects.split(",").map(s => s.trim()).filter(Boolean),
+      classes: form.classes.split(",").map(s => s.trim()).filter(Boolean),
+      grade: form.grade || "",
+      school_id: schoolId,
+      status: "active",
+      user_id: null,
+      // የጊዜ መረጃዎቹን (timestamps) ለጥንቃቄ እዚሁ እንጨምራቸው
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...(finalTeacherId && { teacher_id: finalTeacherId }),
+    };
+
+    if (editId) {
+      const { error } = await supabase.from("teachers").update(payload).eq("id", editId);
+      if (error) { 
+        // Update ሲያደርግ ስህተት ካለ
+        alert(`❌ UPDATE ERROR:\nMessage: ${error.message}\nDetails: ${error.details}\nHint: ${error.hint}`);
+        console.error("Full Update Error:", error);
+        return; 
+      }
+      toast.success("Teacher updated");
+    } else {
+      const { error } = await supabase.from("teachers").insert([payload]);
+      if (error) { 
+        // 🚨 ዋናው ማወቂያችን እዚህ ጋር ነው! 🚨
+        alert(`❌ INSERT ERROR:\n\nMessage: ${error.message}\n\nDetails: ${error.details}\n\nHint: ${error.hint || "None"}\n\nCode: ${error.code}`);
+        console.error("Full Insert Error:", error);
+        return; 
+      }
+      toast.success(`Teacher registered! ID: ${finalTeacherId}`);
+    }
+
+    setDialogOpen(false);
+    setForm(emptyForm);
+    setEditId(null);
+    fetchTeachers();
+  };
 
 
   const handleEdit = (t: Teacher) => {
