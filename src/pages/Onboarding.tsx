@@ -94,75 +94,47 @@ const { error: roleError } = await supabase.from("user_assignments")
   }
 };
 
+
 const handleTeacherVerify = async () => {
+  // 1. መጀመሪያ ፎርሙ መሞላቱን እናረጋግጣለን
   if (!teacherSchoolCode.trim() || !teacherId.trim()) {
     alert("እባክዎ School Code እና Teacher ID ያስገቡ");
     return;
   }
-  
+
   setTeacherVerifying(true);
-  
+
   try {
-    // RPC ጥሪው
-    const { data: schoolData, error: schoolError } = await supabase.rpc("get_school_by_code", { _code: teacherSchoolCode.trim() });
-    
-    // 🚨 እውነተኛውን ስህተት የሚያሳይ ALERT
-    if (schoolError) {
-      alert(`ዳታቤዝ ስህተት (RPC): \nMessage: ${schoolError.message} \nDetails: ${schoolError.details}`);
-      return;
-    }
-    
-    if (!schoolData || (Array.isArray(schoolData) && schoolData.length === 0)) {
-      alert("ትምህርት ቤት አልተገኘም (School Code ስህተት ሊሆን ይችላል)");
-      return;
-    }
-    
-    const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
+    // 2. የሰጠሁህን RPC (Database Function) በቀጥታ እንጠራለን
+    // ይሄ አንድ መስመር ኮድ የላክኸውን 50 መስመር ስራ በሙሉ ይሰራል
+    const { data, error } = await supabase.rpc('verify_teacher_and_link', {
+      input_teacher_id: teacherId.trim(),
+      input_school_code: teacherSchoolCode.trim()
+    });
 
-    // መምህሩን መፈለግ
-    const { data: teacher, error: teacherError } = await supabase
-      .from("teachers")
-      .select("id, first_name, last_name, user_id")
-      .eq("school_id", school.id)
-      .ilike("teacher_id", teacherId.trim())
-      .maybeSingle();
-
-    if (teacherError) {
-      alert(`መምህር መፈለጊያ ስህተት: \n${teacherError.message}`);
-      return;
-    }
-    
-    if (!teacher) {
-      alert("ይህ መምህር በዚሁ ትምህርት ቤት አልተገኘም");
+    // 3. የኔትወርክ ወይም የሲስተም ስህተት ካለ
+    if (error) {
+      alert(`የሲስተም ስህተት: ${error.message}`);
       return;
     }
 
-    if (teacher.user_id) {
-      alert("ይህ መምህር ቀድሞውኑ ከሌላ ተጠቃሚ ጋር ተገናኝቷል!");
-      return;
+    // 4. ዳታቤዙ የመለሰልንን መልስ እናያለን (Success: true ወይም false)
+    if (data.success) {
+      alert(data.message); // "እንኳን ደህና መጡ! መለያዎ በትክክል ተገናኝቷል።"
+      
+      // እዚህ ጋር ወደ ዳሽቦርድ የሚወስደውን ኮድ ጨምር
+      // router.push('/dashboard'); 
+    } else {
+      // መታወቂያው ስህተት ከሆነ ወይም መምህሩ ካልተገኘ
+      alert(data.message); 
     }
 
-    // Update
-    const { error: updateError } = await supabase
-      .from("teachers")
-      .update({ user_id: user?.id })
-      .eq("id", teacher.id);
-
-    if (updateError) {
-      alert(`መረጃ ማዘመን አልተቻለም (Update Error): \n${updateError.message}`);
-      return;
-    }
-
-    alert("ስኬታማ! መምህሩ በትክክል ተገናኝቷል");
-    await assignRole(school.id, "teacher");
-
-  } catch (error: any) {
-    alert("የስርዓት ችግር ተፈጥሯል: " + error.message);
+  } catch (error) {
+    alert("ያልተጠበቀ ስህተት ተፈጥሯል: " + error.message);
   } finally {
     setTeacherVerifying(false);
   }
 };
-
 
    
 
