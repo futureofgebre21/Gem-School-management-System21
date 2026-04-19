@@ -19,8 +19,14 @@ type Step = "role-select" | "admin-sub-role" | "school-code" | "school-create" |
 
 
 const roles = [
-  { value: "school_admin", label: "Admin", icon: UserCog, desc: "Create & manage your school" },
+  { value: "school_admin", label: "School Admin", icon: UserCog, desc: "Create & manage your school" },
+  { value: "vice_admin", label: "Vice Admin", icon: UserCog, desc: "Administrative support" },
+  { value: "vice_academic", label: "Vice Academic", icon: Users, desc: "Academic coordination" },
   { value: "teacher", label: "Teacher", icon: Users, desc: "Class & grade management" },
+  { value: "human_resource", label: "Human Resource", icon: Users, desc: "Staff management" },
+  { value: "cashier", label: "Cashier", icon: Home, desc: "Fee management" },
+  { value: "director", label: "Director", icon: Building2, desc: "School leadership" },
+  { value: "record_office", label: "Record Office", icon: Hash, desc: "Records management" },
   { value: "student", label: "Student", icon: GraduationCap, desc: "View grades & attendance" },
   { value: "parent", label: "Parent", icon: Home, desc: "Monitor child's progress" },
 ];
@@ -85,10 +91,14 @@ const { error: roleError } = await supabase.from("user_assignments")
   const handleRoleContinue = () => {
   if (!selectedRole) { toast.error("Please select your role"); return; }
   
+  const staffRoles = ["vice_admin", "vice_academic", "human_resource", "cashier", "director", "record_office"];
+  
   if (selectedRole === "school_admin") {
     setStep("admin-sub-role"); 
   } else if (selectedRole === "teacher") {
     setStep("teacher-verify");
+  } else if (staffRoles.includes(selectedRole)) {
+    setStep("staff-verify");
   } else {
     setStep("school-code");
   }
@@ -150,7 +160,8 @@ const handleStaffVerify = async () => {
       .select("*")
       .eq("school_id", school.id)
       .eq("invite_code", staffInviteCode.trim().toUpperCase())
-      .eq("target_role", selectedRole)
+      .eq("role_name", selectedRole)
+      .is("used_at", null)
       .maybeSingle();
 
     if (inviteError || !invite) {
@@ -159,11 +170,21 @@ const handleStaffVerify = async () => {
       return;
     }
 
+    // Check if expired
+    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+      toast.error("Invite Code has expired.");
+      setLoading(false);
+      return;
+    }
+
     // 3. ኮዱ ትክክል ከሆነ ፕሮፋይሉን ማዘመን እና ሮል መስጠት
     await supabase.from("profiles").update({ school_id: school.id }).eq("id", user?.id);
     
-    // የጥሪ ኮዱን ከጥቅም ውጭ ለማድረግ መሰረዝ (አማራጭ ነው ግን ይመከራል)
-    await supabase.from("staff_invites").delete().eq("id", invite.id);
+    // Mark invite as used
+    await supabase.from("staff_invites").update({ 
+      used_at: new Date().toISOString(), 
+      used_by: user?.id 
+    }).eq("id", invite.id);
 
     // ሮል መስጠት (user_assignments ላይ)
     await assignRole(school.id, selectedRole);
@@ -181,7 +202,7 @@ const handleJoinSchool = () => {
   if (!foundSchool) { toast.error("Please look up a valid school code first"); return; }
 
   // 🛡️ የሰራተኞች ዝርዝር (እነዚህ ሰዎች ያለ Invite Code መግባት የለባቸውም)
-  const restrictedRoles = ["record_office", "vice_academic", "vice_admin", "human_resource", "casher"];
+  const restrictedRoles = ["record_office", "vice_academic", "vice_admin", "human_resource", "cashier", "director"];
 
   if (restrictedRoles.includes(selectedRole)) {
     toast.error("Staff members must use an Invite Code to join.");

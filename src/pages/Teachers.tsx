@@ -31,7 +31,7 @@ const emptyForm = {
 };
 
 export default function Teachers() {
-  const { schoolId } = useAuth();
+  const { schoolId, userRole } = useAuth();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -270,7 +270,9 @@ grade: t.grade ?? "",
         {/* 9. Actions */}
         <TableCell className="text-right">
           <Button variant="ghost" size="icon" onClick={() => handleEdit(t)}><Edit className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+          {userRole !== 'director' && userRole !== 'record_office' && (
+            <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+          )}
         </TableCell>
       </TableRow>
     ))
