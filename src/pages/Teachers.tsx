@@ -94,6 +94,22 @@ const handleSubmit = async (e: React.FormEvent) => {
       if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Teacher updated");
     } else {
+      const { data: existingTeacher, error: existingError } = await supabase
+        .from("teachers")
+        .select("id")
+        .or(`email.eq.${form.email},teacher_id.eq.${finalTeacherId}`)
+        .limit(1);
+
+      if (existingError) {
+        toast.error(getUserFriendlyError(existingError));
+        return;
+      }
+
+      if ((existingTeacher?.length ?? 0) > 0) {
+        toast.error("A teacher with this email or teacher ID already exists. Please edit the existing teacher instead.");
+        return;
+      }
+
       const { error } = await supabase.from("teachers").insert([payload]); // 👈 Array ውስጥ አድርገህ ላከው
       if (error) {
         console.error("Insert Error:", error); // ለበለጠ ምርመራ
