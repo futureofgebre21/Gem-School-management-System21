@@ -94,49 +94,38 @@ const { error: roleError } = await supabase.from("user_assignments")
   }
 };
 
-
-const handleTeacherVerify = async () => {
-  // 1. መጀመሪያ ፎርሙ መሞላቱን እናረጋግጣለን
+   const handleTeacherVerify = async () => {
   if (!teacherSchoolCode.trim() || !teacherId.trim()) {
-    alert("እባክዎ School Code እና Teacher ID ያስገቡ");
+    toast.error("እባክዎ School Code እና Teacher ID ያስገቡ");
     return;
   }
 
   setTeacherVerifying(true);
 
   try {
-    // 2. የሰጠሁህን RPC (Database Function) በቀጥታ እንጠራለን
-    // ይሄ አንድ መስመር ኮድ የላክኸውን 50 መስመር ስራ በሙሉ ይሰራል
+    // አሁን ስራው በሙሉ በዳታቤዝ ውስጥ ስለሚሰራ፣ እዚህ ጋር የምንጠራው RPC ብቻ ነው
     const { data, error } = await supabase.rpc('verify_teacher_and_link', {
-      input_teacher_id: teacherId.trim(),
-      input_school_code: teacherSchoolCode.trim()
+      input_school_code: teacherSchoolCode.trim(),
+      input_teacher_id: teacherId.trim()
     });
 
-    // 3. የኔትወርክ ወይም የሲስተም ስህተት ካለ
     if (error) {
-      alert(`የሲስተም ስህተት: ${error.message}`);
-      return;
-    }
-
-    // 4. ዳታቤዙ የመለሰልንን መልስ እናያለን (Success: true ወይም false)
-    if (data.success) {
-      alert(data.message); // "እንኳን ደህና መጡ! መለያዎ በትክክል ተገናኝቷል።"
-      
-      // እዚህ ጋር ወደ ዳሽቦርድ የሚወስደውን ኮድ ጨምር
-      // router.push('/dashboard'); 
+      console.error("Supabase Error:", error);
+      toast.error("ስህተት ተፈጥሯል: " + error.message);
+    } else if (data.success) {
+      toast.success(data.message);
+      // ወደ ዳሽቦርድ ማዛወር ካለብህ እዚህ ጋር ጻፍ
     } else {
-      // መታወቂያው ስህተት ከሆነ ወይም መምህሩ ካልተገኘ
-      alert(data.message); 
+      toast.error(data.message);
     }
-
-  } catch (error) {
-    alert("ያልተጠበቀ ስህተት ተፈጥሯል: " + error.message);
+  } catch (err) {
+    console.error("Error:", err);
+    toast.error("የሲስተም ችግር ተፈጥሯል");
   } finally {
     setTeacherVerifying(false);
   }
 };
 
-   
 
 const handleStaffVerify = async () => {
   if (!schoolCode.trim() || !staffInviteCode.trim()) {
