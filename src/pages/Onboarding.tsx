@@ -75,12 +75,31 @@ const [staffInviteCode, setStaffInviteCode] = useState("");
   const assignRole = async (schoolId: string, role: string) => {
     if (!user) return;
     setLoading(true);
-    // ከ user_roles ይልቅ user_assignments መጠቀም አለበት
-const { error: roleError } = await supabase.from("user_assignments")
-  .insert({ user_id: user.id, role_name: role, school_id: schoolId });
+    
+    // Map admin positions to school_admin role with position specified
+    const adminPositions = ["director", "vice_academic", "vice_admin", "record_office", "human_resource", "cashier"];
+    const roleToInsert = adminPositions.includes(role) ? "school_admin" : role;
+    const positionToInsert = adminPositions.includes(role) ? role : null;
 
-    if (roleError) { toast.error(getUserFriendlyError(roleError)); setLoading(false); return; }
-    await supabase.from("profiles").update({ school_id: schoolId }).eq("id", user.id);
+    const { error: roleError } = await supabase.from("user_assignments")
+      .insert({ 
+        user_id: user.id, 
+        role_name: roleToInsert,
+        position: positionToInsert,
+        school_id: schoolId 
+      });
+
+    if (roleError) { 
+      toast.error(getUserFriendlyError(roleError)); 
+      setLoading(false); 
+      return; 
+    }
+    
+    await supabase.from("profiles").update({ 
+      school_id: schoolId,
+      position: positionToInsert
+    }).eq("id", user.id);
+    
     toast.success("Setup complete! Redirecting...");
     window.location.href = "/dashboard";
   };
@@ -141,7 +160,7 @@ const handleStaffVerify = async () => {
   }
   setLoading(true);
   try {
-    // 1. ትምህርት ቤቱን በኮዱ መፈለግ
+    // 1. Look up the school by code
     const { data: schoolData, error: schoolError } = await supabase.rpc("get_school_by_code", { _code: schoolCode.trim() });
     const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
 
@@ -151,18 +170,18 @@ const handleStaffVerify = async () => {
       return;
     }
 
-    // 2. የጥሪ ኮዱን (Invite Code) ማረጋገጥ
+    // 2. Verify the invite code for the selected position
     const { data: invite, error: inviteError } = await supabase
       .from("staff_invites")
       .select("*")
       .eq("school_id", school.id)
       .eq("invite_code", staffInviteCode.trim().toUpperCase())
-      .eq("role_name", selectedRole)
+      .eq("position", selectedRole)
       .is("used_at", null)
       .maybeSingle();
 
     if (inviteError || !invite) {
-      toast.error("Invalid Invite Code or Role mismatch.");
+      toast.error("Invalid Invite Code or Position mismatch.");
       setLoading(false);
       return;
     }
@@ -174,8 +193,12 @@ const handleStaffVerify = async () => {
       return;
     }
 
-    // 3. ኮዱ ትክክል ከሆነ ፕሮፋይሉን ማዘመን እና ሮል መስጠት
-    await supabase.from("profiles").update({ school_id: school.id }).eq("id", user?.id);
+    // 3. Update profile and assign role
+    await supabase.from("profiles").update({ 
+      school_id: school.id,
+      staff_id: invite.staff_id,
+      position: selectedRole
+    }).eq("id", user?.id);
     
     // Mark invite as used
     await supabase.from("staff_invites").update({ 
@@ -183,16 +206,16 @@ const handleStaffVerify = async () => {
       used_by: user?.id 
     }).eq("id", invite.id);
 
-    // ሮል መስጠት (user_assignments ላይ)
+    // Assign role (school_admin with position)
     await assignRole(school.id, selectedRole);
 
   } catch (error: any) {
+    console.error("Verification error:", error);
     toast.error("Verification failed: " + error.message);
   } finally {
     setLoading(false);
   }
 };
-
 
   
 const handleJoinSchool = () => {
