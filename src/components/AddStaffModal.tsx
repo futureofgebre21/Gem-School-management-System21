@@ -20,23 +20,26 @@ export function AddStaffModal({ role, schoolId, label }: { role: string, schoolI
   const [open, setOpen] = useState(false);
 
   const handleAddStaff = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.rpc("generate_staff_invite_with_data", {
-      p_school_id: schoolId,
-      p_role: role,
-      p_first_name: formData.firstName,
-      p_last_name: formData.lastName,
-      p_phone: formData.phone,
-      p_email: formData.email,
-      p_year: formData.year
-    });
+    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      setGeneratedCode(data);
-      toast.success(`${label} code generated successfully!`);
-      // ፎርሙን በካርድ ቅርጽ ለማሳየት closeModal አትጠቀም
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("generate_staff_invite_with_data", {
+        p_school_id: schoolId,
+        p_role_name: role
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        setGeneratedCode(data.invite_code);
+        toast.success(`${label} invite generated successfully!`);
+      }
+    } catch (err) {
+      toast.error("Failed to generate invite");
     }
     setLoading(false);
   };
@@ -57,19 +60,43 @@ export function AddStaffModal({ role, schoolId, label }: { role: string, schoolI
         </DialogHeader>
         
         <div className="space-y-4 pt-4">
-          <Input placeholder="First Name" className="bg-sidebar-accent border-sidebar-border" onChange={e => setFormData({...formData, firstName: e.target.value})} />
-          <Input placeholder="Last Name" className="bg-sidebar-accent border-sidebar-border" onChange={e => setFormData({...formData, lastName: e.target.value})} />
-          <Input placeholder="Phone" className="bg-sidebar-accent border-sidebar-border" onChange={e => setFormData({...formData, phone: e.target.value})} />
-          <Input placeholder="Email" className="bg-sidebar-accent border-sidebar-border" onChange={e => setFormData({...formData, email: e.target.value})} />
+          <div className="grid grid-cols-2 gap-3">
+            <Input 
+              placeholder="First Name" 
+              className="bg-sidebar-accent border-sidebar-border" 
+              value={formData.firstName}
+              onChange={e => setFormData({...formData, firstName: e.target.value})} 
+            />
+            <Input 
+              placeholder="Last Name" 
+              className="bg-sidebar-accent border-sidebar-border" 
+              value={formData.lastName}
+              onChange={e => setFormData({...formData, lastName: e.target.value})} 
+            />
+          </div>
+          <Input 
+            placeholder="Email (optional)" 
+            type="email"
+            className="bg-sidebar-accent border-sidebar-border" 
+            value={formData.email}
+            onChange={e => setFormData({...formData, email: e.target.value})} 
+          />
+          <Input 
+            placeholder="Phone (optional)" 
+            className="bg-sidebar-accent border-sidebar-border" 
+            value={formData.phone}
+            onChange={e => setFormData({...formData, phone: e.target.value})} 
+          />
           
           {!generatedCode ? (
             <Button onClick={handleAddStaff} disabled={loading} className="w-full bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90">
-              {loading ? "Generating..." : `Add ${label}`}
+              {loading ? "Generating..." : `Generate Invite for ${label}`}
             </Button>
           ) : (
             <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl text-center shadow-inner">
-              <p className="text-sm font-medium text-primary">Generated Invite Code:</p>
-              <p className="text-2xl font-mono font-bold tracking-widest text-primary mt-1">{generatedCode}</p>
+              <p className="text-sm font-medium text-primary mb-2">Invite Code Generated:</p>
+              <p className="text-2xl font-mono font-bold tracking-widest text-primary">{generatedCode}</p>
+              <p className="text-xs text-muted-foreground mt-2">Share this code with the staff member to join</p>
             </div>
           )}
         </div>

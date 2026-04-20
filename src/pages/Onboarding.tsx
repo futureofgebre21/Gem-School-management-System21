@@ -1,11 +1,8 @@
-import { useEffect, useState } from "react"; 
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/lib/auth";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { getUserFriendlyError } from "@/lib/errorHandler";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -313,36 +310,42 @@ const handleJoinSchool = () => {
 {step === "admin-sub-role" && (
   <Card className="shadow-card">
     <CardHeader className="text-center">
-      <CardTitle className="text-xl">Admin Position</CardTitle>
+      <CardTitle className="text-xl">Select Your Admin Position</CardTitle>
+      <CardDescription>Choose your specific role within school administration</CardDescription>
     </CardHeader>
     <CardContent className="space-y-3">
-      {["Director", "Record office", "Vice Academic", "Vice Admin", "Human Resource", "Casher"].map((label) => {
-        // 1. መጀመሪያ ስሙን ለዳታቤዝ በሚሆን መልኩ ማስተካከል (ለምሳሌ፡ record_office)
-        const roleValue = label.toLowerCase().replace(/\s+/g, "_");
-
-        return (
-          <Button 
-            key={roleValue} 
-            variant="outline" 
-            className="w-full justify-start text-left" 
-            onClick={() => {
-  setSelectedRole(roleValue); 
-  // ዳይሬክተር ከሆነ ወደ መፍጠሪያ፣ ሌላ ከሆነ ወደ ኮድ ማስገቢያ
-  if (roleValue === "director") {
-    setStep("school-create");
-  } else {
-    setStep("staff-verify");
-  }
-}}
-
-          >
-            {label}
-          </Button>
-        );
-      })}
+      {[
+        { label: "Director", value: "director", desc: "School leadership and management" },
+        { label: "Vice Academic", value: "vice_academic", desc: "Academic coordination" },
+        { label: "Vice Admin", value: "vice_admin", desc: "Administrative support" },
+        { label: "Record Office", value: "record_office", desc: "Records and student management" },
+        { label: "Human Resource", value: "human_resource", desc: "Staff management" },
+        { label: "Cashier", value: "cashier", desc: "Fee and payment management" }
+      ].map((position) => (
+        <button
+          key={position.value}
+          onClick={() => {
+            setSelectedRole(position.value);
+            if (position.value === "director") {
+              setStep("school-create");
+            } else {
+              setStep("staff-verify");
+            }
+          }}
+          className="w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all text-left hover:border-primary/40 border-border"
+        >
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted">
+            <UserCog className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="font-semibold text-foreground">{position.label}</p>
+            <p className="text-xs text-muted-foreground">{position.desc}</p>
+          </div>
+        </button>
+      ))}
 
       <Button variant="ghost" className="w-full mt-2" onClick={() => setStep("role-select")}>
-        ← Back to role selection 
+        ← Back to role selection
       </Button>
     </CardContent>
   </Card>

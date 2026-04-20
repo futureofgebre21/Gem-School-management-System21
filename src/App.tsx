@@ -24,6 +24,7 @@ import ExamPractice from "./pages/ExamPractice";
 import Support from "./pages/Support";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
+import HR from "./pages/HR";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="attendance" element={<Attendance />} />
               <Route path="grades" element={<Grades />} />
               <Route path="fees" element={<Fees />} />
+              <Route path="hr" element={<HR />} />
               <Route path="parent" element={<ParentPortal />} />
               <Route path="announcements" element={<Announcements />} />
               <Route path="import" element={<DataImport />} />

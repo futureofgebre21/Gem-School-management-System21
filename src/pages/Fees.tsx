@@ -20,13 +20,20 @@ function FeeStructureTab({ schoolId }: { schoolId: string }) {
   const [years, setYears] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", amount: "", class_id: "", academic_year_id: "", term: "", description: "" });
+  const [form, setForm] = useState({ 
+    name: "", 
+    amount: "", 
+    grade: "", 
+    academic_year: "", 
+    frequency: "annually",
+    description: "",
+    is_active: true
+  });
 
   const fetchData = async () => {
     setLoading(true);
     const [fees, cls, yrs] = await Promise.all([
-      supabase.from("fee_structures").select("*, classes(name), academic_years(name)").eq("school_id", schoolId).order("created_at", { ascending: false }),
+      supabase.from("fee_structures").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }),
       supabase.from("classes").select("id, name").eq("school_id", schoolId).order("name"),
       supabase.from("academic_years").select("id, name").eq("school_id", schoolId).order("start_date", { ascending: false }),
     ]);
@@ -43,12 +50,15 @@ function FeeStructureTab({ schoolId }: { schoolId: string }) {
     const payload = {
       name: form.name,
       amount: parseFloat(form.amount),
-      class_id: form.class_id || null,
-      academic_year_id: form.academic_year_id || null,
-      term: form.term || null,
+      grade: form.grade || null,
+      academic_year: form.academic_year,
+      frequency: form.frequency,
       description: form.description || null,
+      is_active: form.is_active,
       school_id: schoolId,
+      created_by: (await supabase.auth.getUser()).data.user?.id
     };
+
     if (editId) {
       const { error } = await supabase.from("fee_structures").update(payload).eq("id", editId);
       if (error) { toast.error(getUserFriendlyError(error)); return; }
@@ -58,9 +68,8 @@ function FeeStructureTab({ schoolId }: { schoolId: string }) {
       if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Created");
     }
-    setDialogOpen(false);
-    setEditId(null);
-    setForm({ name: "", amount: "", class_id: "", academic_year_id: "", term: "", description: "" });
+    setDialogOpen(false); setEditId(null); 
+    setForm({ name: "", amount: "", grade: "", academic_year: "", frequency: "annually", description: "", is_active: true }); 
     fetchData();
   };
 
@@ -75,7 +84,7 @@ function FeeStructureTab({ schoolId }: { schoolId: string }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{items.length} fee structures</p>
-        <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) { setEditId(null); setForm({ name: "", amount: "", class_id: "", academic_year_id: "", term: "", description: "" }); } }}>
+        <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) { setEditId(null); setForm({ name: "", amount: "", grade: "", academic_year: "", frequency: "annually", description: "", is_active: true }); } }}>
           <DialogTrigger asChild><Button size="sm"><Plus className="w-4 h-4 mr-1" />Add Fee</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{editId ? "Edit" : "Add"} Fee Structure</DialogTitle></DialogHeader>
@@ -84,31 +93,28 @@ function FeeStructureTab({ schoolId }: { schoolId: string }) {
               <div><Label>Amount *</Label><Input type="number" required min="0" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00" /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Class (optional)</Label>
-                  <Select value={form.class_id} onValueChange={v => setForm({ ...form, class_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="All classes" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Classes</SelectItem>
-                      {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label>Grade (optional)</Label>
+                  <Input value={form.grade} onChange={e => setForm({ ...form, grade: e.target.value })} placeholder="e.g. Grade 1" />
                 </div>
                 <div>
-                  <Label>Academic Year</Label>
-                  <Select value={form.academic_year_id} onValueChange={v => setForm({ ...form, academic_year_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{years.map(y => <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>)}</SelectContent>
+                  <Label>Academic Year *</Label>
+                  <Select value={form.academic_year} onValueChange={v => setForm({ ...form, academic_year: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
+                    <SelectContent>
+                      {years.map(y => <SelectItem key={y.id} value={y.name}>{y.name}</SelectItem>)}
+                    </SelectContent>
                   </Select>
                 </div>
               </div>
               <div>
-                <Label>Term</Label>
-                <Select value={form.term} onValueChange={v => setForm({ ...form, term: v })}>
-                  <SelectTrigger><SelectValue placeholder="All terms" /></SelectTrigger>
+                <Label>Frequency</Label>
+                <Select value={form.frequency} onValueChange={v => setForm({ ...form, frequency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="First Term">First Term</SelectItem>
-                    <SelectItem value="Second Term">Second Term</SelectItem>
-                    <SelectItem value="Third Term">Third Term</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="annually">Annually</SelectItem>
+                    <SelectItem value="one_time">One Time</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -121,24 +127,33 @@ function FeeStructureTab({ schoolId }: { schoolId: string }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Fee Name</TableHead><TableHead>Amount</TableHead><TableHead>Class</TableHead>
-            <TableHead>Term</TableHead><TableHead>Year</TableHead><TableHead className="text-right">Actions</TableHead>
+            <TableHead>Fee Name</TableHead><TableHead>Amount</TableHead><TableHead>Grade</TableHead>
+            <TableHead>Frequency</TableHead><TableHead>Year</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {loading ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Loading...</TableCell></TableRow> :
-            items.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">No fee structures</TableCell></TableRow> :
+          {loading ? <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">Loading...</TableCell></TableRow> :
+            items.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">No fee structures</TableCell></TableRow> :
               items.map(i => (
                 <TableRow key={i.id}>
                   <TableCell className="font-medium">{i.name}</TableCell>
                   <TableCell className="font-bold">₦{Number(i.amount).toLocaleString()}</TableCell>
-                  <TableCell>{(i as any).classes?.name ?? "All"}</TableCell>
-                  <TableCell>{i.term ?? "All"}</TableCell>
-                  <TableCell>{(i as any).academic_years?.name ?? "-"}</TableCell>
+                  <TableCell>{i.grade || "All"}</TableCell>
+                  <TableCell><Badge variant="outline">{i.frequency}</Badge></TableCell>
+                  <TableCell>{i.academic_year}</TableCell>
+                  <TableCell><Badge variant={i.is_active ? "default" : "secondary"}>{i.is_active ? "Active" : "Inactive"}</Badge></TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => {
                       setEditId(i.id);
-                      setForm({ name: i.name, amount: String(i.amount), class_id: i.class_id ?? "", academic_year_id: i.academic_year_id ?? "", term: i.term ?? "", description: i.description ?? "" });
+                      setForm({ 
+                        name: i.name, 
+                        amount: String(i.amount), 
+                        grade: i.grade || "", 
+                        academic_year: i.academic_year, 
+                        frequency: i.frequency, 
+                        description: i.description || "",
+                        is_active: i.is_active
+                      });
                       setDialogOpen(true);
                     }}><Edit className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => handleDelete(i.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
@@ -157,8 +172,15 @@ function PaymentsTab({ schoolId }: { schoolId: string }) {
   const [students, setStudents] = useState<any[]>([]);
   const [fees, setFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ student_id: "", fee_structure_id: "", amount_paid: "", status: "paid", payment_method: "cash", payment_date: new Date().toISOString().split("T")[0], remarks: "" });
+  const [form, setForm] = useState({ 
+    student_id: "", 
+    fee_structure_id: "", 
+    amount: "", 
+    payment_method: "cash", 
+    payment_date: new Date().toISOString().split("T")[0], 
+    transaction_id: "",
+    remarks: "" 
+  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -180,26 +202,34 @@ function PaymentsTab({ schoolId }: { schoolId: string }) {
     const { error } = await supabase.from("fee_payments").insert({
       student_id: form.student_id,
       fee_structure_id: form.fee_structure_id,
-      amount_paid: parseFloat(form.amount_paid),
-      status: form.status,
+      amount: parseFloat(form.amount),
       payment_method: form.payment_method,
       payment_date: form.payment_date,
+      transaction_id: form.transaction_id || null,
       remarks: form.remarks || null,
       school_id: schoolId,
-      recorded_by: user?.id,
+      collected_by: user?.id,
     });
     if (error) { toast.error(getUserFriendlyError(error)); return; }
     toast.success("Payment recorded");
     setDialogOpen(false);
-    setForm({ student_id: "", fee_structure_id: "", amount_paid: "", status: "paid", payment_method: "cash", payment_date: new Date().toISOString().split("T")[0], remarks: "" });
+    setForm({ 
+      student_id: "", 
+      fee_structure_id: "", 
+      amount: "", 
+      payment_method: "cash", 
+      payment_date: new Date().toISOString().split("T")[0], 
+      transaction_id: "",
+      remarks: "" 
+    });
     fetchData();
   };
 
   const exportCSV = () => {
-    const headers = ["Receipt", "Student", "Fee", "Amount", "Status", "Method", "Date"];
+    const headers = ["Student", "Fee", "Amount", "Method", "Date", "Collected By"];
     const rows = payments.map(p => [
-      p.receipt_number, `${(p as any).students?.first_name} ${(p as any).students?.last_name}`,
-      (p as any).fee_structures?.name, p.amount_paid, p.status, p.payment_method, p.payment_date,
+      `${(p as any).students?.first_name} ${(p as any).students?.last_name}`,
+      (p as any).fee_structures?.name, p.amount, p.payment_method, p.payment_date, p.collected_by,
     ]);
     const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -235,33 +265,23 @@ function PaymentsTab({ schoolId }: { schoolId: string }) {
                   </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Amount Paid *</Label><Input type="number" required min="0" step="0.01" value={form.amount_paid} onChange={e => setForm({ ...form, amount_paid: e.target.value })} /></div>
-                  <div>
-                    <Label>Status</Label>
-                    <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="paid">✅ Paid</SelectItem>
-                        <SelectItem value="partial">⚠️ Partial</SelectItem>
-                        <SelectItem value="unpaid">❌ Unpaid</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <div><Label>Amount *</Label><Input type="number" required min="0" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} /></div>
+                  <div><Label>Transaction ID</Label><Input value={form.transaction_id} onChange={e => setForm({ ...form, transaction_id: e.target.value })} placeholder="Optional" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Method</Label>
+                    <Label>Payment Method</Label>
                     <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="cash">Cash</SelectItem>
                         <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                        <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="online">Online</SelectItem>
+                        <SelectItem value="check">Check</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div><Label>Date</Label><Input type="date" value={form.payment_date} onChange={e => setForm({ ...form, payment_date: e.target.value })} /></div>
+                  <div><Label>Payment Date</Label><Input type="date" value={form.payment_date} onChange={e => setForm({ ...form, payment_date: e.target.value })} /></div>
                 </div>
                 <div><Label>Remarks</Label><Input value={form.remarks} onChange={e => setForm({ ...form, remarks: e.target.value })} /></div>
                 <Button type="submit" className="w-full">Record Payment</Button>
@@ -273,24 +293,21 @@ function PaymentsTab({ schoolId }: { schoolId: string }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Receipt #</TableHead><TableHead>Student</TableHead><TableHead>Fee</TableHead>
-            <TableHead>Amount</TableHead><TableHead>Status</TableHead><TableHead>Method</TableHead><TableHead>Date</TableHead>
+            <TableHead>Student</TableHead><TableHead>Fee</TableHead>
+            <TableHead>Amount</TableHead><TableHead>Method</TableHead><TableHead>Date</TableHead><TableHead>Collected By</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {loading ? <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">Loading...</TableCell></TableRow> :
-            payments.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">No payments recorded</TableCell></TableRow> :
+          {loading ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Loading...</TableCell></TableRow> :
+            payments.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">No payments recorded</TableCell></TableRow> :
               payments.map(p => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-mono text-sm">{p.receipt_number}</TableCell>
                   <TableCell className="font-medium">{(p as any).students?.first_name} {(p as any).students?.last_name}</TableCell>
                   <TableCell>{(p as any).fee_structures?.name}</TableCell>
-                  <TableCell className="font-bold">₦{Number(p.amount_paid).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={p.status === "paid" ? "default" : p.status === "partial" ? "secondary" : "destructive"} className="capitalize">{p.status}</Badge>
-                  </TableCell>
+                  <TableCell className="font-bold">₦{Number(p.amount).toLocaleString()}</TableCell>
                   <TableCell className="capitalize text-sm">{p.payment_method?.replace("_", " ")}</TableCell>
                   <TableCell className="text-sm">{p.payment_date}</TableCell>
+                  <TableCell className="text-sm">{p.collected_by}</TableCell>
                 </TableRow>
               ))}
         </TableBody>

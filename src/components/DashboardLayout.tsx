@@ -19,7 +19,7 @@ import {
 
 const navItems = [
   // 1. ሁሉም ሰው ዳሽቦርድ ማየት አለበት
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director", "vice_academic", "vice_admin", "record_office", "human_resource", "casher"] },
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director", "vice_academic", "vice_admin", "record_office", "human_resource", "cashier"] },
   
   // 2. Record Office የሚያያቸው
   { to: "/dashboard/students", icon: Users, label: "Students", roles: ["super_admin", "school_admin", "record_office"] },
@@ -37,8 +37,8 @@ const navItems = [
   // 5. Attendance (Vice Academic, Vice Admin እና HR ማየት አለባቸው)
   { to: "/dashboard/attendance", icon: Calendar, label: "Attendance", roles: ["super_admin", "school_admin", "teacher", "student", "director", "vice_admin", "vice_academic", "human_resource"] },
 
-  // 6. ለ Casher እና Admin ብቻ
-  { to: "/dashboard/fees", icon: DollarSign, label: "Finance & Casher", roles: ["super_admin", "director", "vice_admin", "casher"] },
+  // 6. ለ Cashier እና Admin ብቻ
+  { to: "/dashboard/fees", icon: DollarSign, label: "Finance & Fees", roles: ["super_admin", "director", "vice_admin", "cashier"] },
   
   // 7. የሰው ሃይል (HR) ማኔጅመንት
   { to: "/dashboard/hr", icon: UserCheck, label: "HR Management", roles: ["super_admin", "director", "vice_admin", "human_resource"] },
@@ -50,7 +50,7 @@ const navItems = [
   // የአስተዳደር ክፍሎች
   { to: "/dashboard/announcements", icon: Megaphone, label: "Announcements", roles: ["super_admin", "school_admin", "director", "record_office"] },
   { to: "/dashboard/import", icon: FileUp, label: "Import Data", roles: ["super_admin", "school_admin", "director", "record_office"] },
-  { to: "/dashboard/support", icon: HelpCircle, label: "Support", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director", "record_office", "vice_academic", "vice_admin", "human_resource", "casher"] },
+  { to: "/dashboard/support", icon: HelpCircle, label: "Support", roles: ["super_admin", "school_admin", "teacher", "student", "parent", "director", "record_office", "vice_academic", "vice_admin", "human_resource", "cashier"] },
 ];
 
 
@@ -60,7 +60,8 @@ export default function DashboardLayout() {
     const { user, userRole, signOut, schoolId } = useAuth(); 
   
   const isDirector = userRole === "director";      
-  const isViceAdmin = userRole === "vice_admin";    
+  const isViceAdmin = userRole === "vice_admin";
+  const canAddStaff = ["director", "vice_admin"].includes(userRole);    
 
   const location = useLocation();
 
@@ -138,11 +139,11 @@ export default function DashboardLayout() {
                 {/* ለቪፒ አድሚን ብቻ */}
                 {isViceAdmin && (
                   <>
-                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
                       <AddStaffModal role="human_resource" schoolId={schoolId} label="Add HR Manager" />
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
-                      <AddStaffModal role="casher" schoolId={schoolId} label="Add Casher" />
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="focus:bg-sidebar-accent focus:text-sidebar-foreground cursor-pointer rounded-lg p-2.5">
+                      <AddStaffModal role="cashier" schoolId={schoolId} label="Add Cashier" />
                     </DropdownMenuItem>
                   </>
                 )}
