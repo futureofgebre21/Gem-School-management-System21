@@ -72,14 +72,24 @@ const [staffInviteCode, setStaffInviteCode] = useState("");
     setFoundSchool(school);
   };
 
-  const assignRole = async (schoolId: string, role: string) => {
+  const assignRole = async (schoolId: string, roleOrPosition: string) => {
     if (!user) return;
     setLoading(true);
     
-    // Map admin positions to school_admin role with position specified
+    // Admin positions that map to school_admin role
     const adminPositions = ["director", "vice_academic", "vice_admin", "record_office", "human_resource", "cashier"];
-    const roleToInsert = adminPositions.includes(role) ? "school_admin" : role;
-    const positionToInsert = adminPositions.includes(role) ? role : null;
+    
+    // Determine role_name and position
+    let roleToInsert: string;
+    let positionToInsert: string | null = null;
+
+    if (adminPositions.includes(roleOrPosition)) {
+      roleToInsert = "school_admin";
+      positionToInsert = roleOrPosition;
+    } else {
+      roleToInsert = roleOrPosition;
+      positionToInsert = null;
+    }
 
     const { error: roleError } = await supabase.from("user_assignments")
       .insert({ 
@@ -95,10 +105,13 @@ const [staffInviteCode, setStaffInviteCode] = useState("");
       return; 
     }
     
-    await supabase.from("profiles").update({ 
-      school_id: schoolId,
-      position: positionToInsert
-    }).eq("id", user.id);
+    // Update profile
+    const profileUpdate: any = { school_id: schoolId };
+    if (positionToInsert) {
+      profileUpdate.position = positionToInsert;
+    }
+    
+    await supabase.from("profiles").update(profileUpdate).eq("id", user.id);
     
     toast.success("Setup complete! Redirecting...");
     window.location.href = "/dashboard";
@@ -182,6 +195,7 @@ const handleStaffVerify = async () => {
 
     if (inviteError || !invite) {
       toast.error("Invalid Invite Code or Position mismatch.");
+      console.error("Invite error:", inviteError);
       setLoading(false);
       return;
     }
@@ -193,7 +207,7 @@ const handleStaffVerify = async () => {
       return;
     }
 
-    // 3. Update profile and assign role
+    // 3. Update profile with staff_id and position
     await supabase.from("profiles").update({ 
       school_id: school.id,
       staff_id: invite.staff_id,
@@ -206,8 +220,25 @@ const handleStaffVerify = async () => {
       used_by: user?.id 
     }).eq("id", invite.id);
 
-    // Assign role (school_admin with position)
-    await assignRole(school.id, selectedRole);
+    // 4. Assign role: role_name='school_admin', position=selectedRole
+    if (user) {
+      const { error: roleError } = await supabase.from("user_assignments")
+        .insert({ 
+          user_id: user.id, 
+          role_name: "school_admin",
+          position: selectedRole,
+          school_id: school.id 
+        });
+
+      if (roleError) {
+        toast.error(getUserFriendlyError(roleError));
+        setLoading(false);
+        return;
+      }
+    }
+
+    toast.success("Setup complete! Redirecting...");
+    window.location.href = "/dashboard";
 
   } catch (error: any) {
     console.error("Verification error:", error);
