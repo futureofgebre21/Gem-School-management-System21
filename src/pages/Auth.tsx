@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserFriendlyError } from "@/lib/errorHandler";
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
 
-export default function Auth() {
+export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,8 +37,11 @@ export default function Auth() {
 
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: roles } = await supabase.from("user_assignments") // ቴብል መቀየር
-  .select("role_name, school_id").eq("user_id", user.id).limit(1);
+          const { data: roles } = await supabase
+            .from("user_assignments")
+            .select("role_name, school_id")
+            .eq("user_id", user.id)
+            .limit(1);
 
           if (roles && roles.length > 0 && roles[0].school_id) {
             navigate("/dashboard");
@@ -58,7 +61,7 @@ export default function Auth() {
         if (error) throw error;
         toast.success("Account created! Check your email to verify.");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(getUserFriendlyError(error));
     } finally {
       setLoading(false);
@@ -84,7 +87,8 @@ export default function Auth() {
       const school = Array.isArray(schoolData) ? schoolData[0] : schoolData;
 
       // Find student by ID number in that school
-      const { data: student, error: studentError } = await supabase.from("students")
+      const { data: student, error: studentError } = await supabase
+        .from("students")
         .select("id, first_name, last_name, parent_email")
         .eq("school_id", school.id)
         .eq("student_id_number", studentId.trim().toUpperCase())
@@ -129,11 +133,11 @@ export default function Auth() {
 
         // Assign student role
         if (signUpData.user) {
-          await supabase.from("user_assignments").insert({ // ቴብሉን ወደ user_assignments መቀየር
-  user_id: signUpData.user.id,
-  role_name: "student", // የ column አይነት role_name
-  school_id: school.id,
-});
+          await supabase.from("user_assignments").insert({
+            user_id: signUpData.user.id,
+            role_name: "student",
+            school_id: school.id,
+          });
 
           await supabase.from("profiles").update({ school_id: school.id }).eq("id", signUpData.user.id);
         }
@@ -153,7 +157,7 @@ export default function Auth() {
 
       toast.success(`Welcome, ${student.first_name}!`);
       navigate("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(getUserFriendlyError(error));
     } finally {
       setStudentLoading(false);
