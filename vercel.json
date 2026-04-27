@@ -2,3 +2,12 @@
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
 
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://gemschool.vercel.app/$1",
+      "permanent": true
+    }
+  ]
+}
