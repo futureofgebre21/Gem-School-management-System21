@@ -154,7 +154,7 @@ export default function Students() {
       await supabase.from("entrollments").delete().eq("student_id", editId).eq("school_id", schoolId);
       const { error: enrollErr } = await supabase.from("entrollments").insert({
         student_id: editId,
-        ...enrollmentData
+        ...entrollmentData
       });
       
       if (enrollErr) { toast.error("Update Error: " + enrollErr.message); return; }
