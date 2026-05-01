@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, School, MapPin, Phone, Mail, Edit, Trash2 } from "lucide-react";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 
 interface SchoolData {
   id: string;
@@ -49,25 +50,37 @@ export default function Schools() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editId) {
-      const { error } = await supabase.from("schools").update(form).eq("id", editId);
-      if (error) { toast.error(error.message); return; }
-      toast.success("School updated");
-    } else {
-      const { error } = await supabase.from("schools").insert(form);
-      if (error) { toast.error(error.message); return; }
-      toast.success("School created");
+    try {
+      if (editId) {
+        const { error } = await supabase.from("schools").update(form).eq("id", editId);
+        if (error) throw error;
+        toast.success("School updated");
+      } else {
+        const { error } = await supabase.from("schools").insert(form);
+        if (error) {
+          // Handle duplicate school_code gracefully without crashing the flow
+          const msg = (error.message || "").toLowerCase();
+          if (msg.includes("duplicate key") && msg.includes("school_code")) {
+            toast.error("A school with this code already exists. Please try again.");
+            return;
+          }
+          throw error;
+        }
+        toast.success("School created");
+      }
+      setDialogOpen(false);
+      setEditId(null);
+      setForm(emptyForm);
+      fetchSchools();
+    } catch (err: any) {
+      toast.error(getUserFriendlyError(err));
     }
-    setDialogOpen(false);
-    setEditId(null);
-    setForm(emptyForm);
-    fetchSchools();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this school?")) return;
     const { error } = await supabase.from("schools").delete().eq("id", id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(getUserFriendlyError(error));
     else { toast.success("Deleted"); fetchSchools(); }
   };
 
