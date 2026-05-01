@@ -14,7 +14,14 @@ import { toast } from "sonner";
 import StudentLinker from "@/components/StudentLinker";
 import { AddStaffModal } from "@/components/AddStaffModal";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input"; 
+import { Input } from "@/components/ui/input";
+import DirectorDashboard from "@/components/dashboards/DirectorDashboard";
+import ViceAcademicDashboard from "@/components/dashboards/ViceAcademicDashboard";
+import ViceAdminDashboard from "@/components/dashboards/ViceAdminDashboard";
+import RecordOfficeDashboard from "@/components/dashboards/RecordOfficeDashboard";
+import HRDashboard from "@/components/dashboards/HRDashboard";
+import CashierDashboard from "@/components/dashboards/CashierDashboard";
+import TeacherDashboard from "@/components/dashboards/TeacherDashboard";
 
 export default function Dashboard() {
   const { user, schoolId, userRole } = useAuth();
