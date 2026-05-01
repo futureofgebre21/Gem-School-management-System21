@@ -148,14 +148,16 @@ const [staffInviteCode, setStaffInviteCode] = useState("");
       input_teacher_id: teacherId.trim()
     });
 
+    const result = data as { success?: boolean; message?: string } | null;
+
     if (error) {
       console.error("Supabase Error:", error);
       toast.error("ስህተት ተፈጥሯል: " + error.message);
-    } else if (data.success) {
-      toast.success(data.message);
+    } else if (result?.success) {
+      toast.success(result.message ?? "Teacher verified successfully");
       // ወደ ዳሽቦርድ ማዛወር ካለብህ እዚህ ጋር ጻፍ
     } else {
-      toast.error(data.message);
+      toast.error(result?.message ?? "Teacher verification failed");
     }
   } catch (err) {
     console.error("Error:", err);
@@ -184,13 +186,12 @@ const handleStaffVerify = async () => {
     }
 
     // 2. Verify the invite code for the selected position
-    const { data: invite, error: inviteError } = await supabase
+    const { data: invite, error: inviteError } = await (supabase as any)
       .from("staff_invites")
       .select("*")
       .eq("school_id", school.id)
       .eq("invite_code", staffInviteCode.trim().toUpperCase())
-      .eq("position", selectedRole)
-      .is("used_at", null)
+      .eq("target_role", selectedRole)
       .maybeSingle();
 
     if (inviteError || !invite) {
@@ -200,25 +201,11 @@ const handleStaffVerify = async () => {
       return;
     }
 
-    // Check if expired
-    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-      toast.error("Invite Code has expired.");
-      setLoading(false);
-      return;
-    }
-
     // 3. Update profile with staff_id and position
     await supabase.from("profiles").update({ 
       school_id: school.id,
-      staff_id: invite.staff_id,
-      position: selectedRole
+      staff_id: invite.invite_code,
     }).eq("id", user?.id);
-    
-    // Mark invite as used
-    await supabase.from("staff_invites").update({ 
-      used_at: new Date().toISOString(), 
-      used_by: user?.id 
-    }).eq("id", invite.id);
 
     // 4. Assign role: role_name='school_admin', position=selectedRole
     if (user) {
