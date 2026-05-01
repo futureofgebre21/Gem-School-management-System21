@@ -162,7 +162,7 @@ export default function StudentLinker({ onLinked }: { onLinked: () => void }) {
       // 3. ወላጅ ከሆነ፡ parent_students ቴብል ላይ ማያያዝ
       if (isParent) {
         const { error: parentLinkErr } = await supabase.from("parent_students")
-          .insert({ parent_id: user.id, student_id: result.id });
+          .insert({ parent_id: user.id, student_id: result.id, school_id: result.school_id });
           
         // ቀድሞ ተያይዞ ከሆነ የሚመጣውን error ችላ እንለዋለን (code 23505)
         if (parentLinkErr && parentLinkErr.code !== '23505') throw parentLinkErr;

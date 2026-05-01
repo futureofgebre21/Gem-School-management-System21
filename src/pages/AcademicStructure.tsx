@@ -344,6 +344,7 @@ function SubjectsTab({ schoolId }: { schoolId: string }) {
 
 // ===== Syllabus Coverage =====
 function SyllabusTab({ schoolId }: { schoolId: string }) {
+  const db = supabase as any;
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [academicYears, setAcademicYears] = useState<any[]>([]);
@@ -366,7 +367,7 @@ function SyllabusTab({ schoolId }: { schoolId: string }) {
   const fetchData = async () => {
     setLoading(true);
     const [structureRes, yearsRes, classesRes, sectionsRes, subjectsRes, teachersRes] = await Promise.all([
-      supabase.from("academic_structure").select(`
+      db.from("academic_structure").select(`
         *,
         teachers(name, staff_id, profiles:user_id(full_name))
       `).eq("school_id", schoolId),
@@ -402,11 +403,11 @@ function SyllabusTab({ schoolId }: { schoolId: string }) {
     };
 
     if (editId) {
-      const { error } = await supabase.from("academic_structure").update(payload).eq("id", editId);
+      const { error } = await db.from("academic_structure").update(payload).eq("id", editId);
       if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Updated");
     } else {
-      const { error } = await supabase.from("academic_structure").insert(payload);
+      const { error } = await db.from("academic_structure").insert(payload);
       if (error) { toast.error(getUserFriendlyError(error)); return; }
       toast.success("Created");
     }
@@ -424,7 +425,7 @@ function SyllabusTab({ schoolId }: { schoolId: string }) {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this academic structure entry?")) return;
-    const { error } = await supabase.from("academic_structure").delete().eq("id", id);
+    const { error } = await db.from("academic_structure").delete().eq("id", id);
     if (error) toast.error(getUserFriendlyError(error)); else { toast.success("Deleted"); fetchData(); }
   };
 
@@ -510,7 +511,7 @@ function SyllabusTab({ schoolId }: { schoolId: string }) {
                   type="number"
                   min="0"
                   max="100"
-                  value={form.syllabus_coverage?.completed || ""}
+                  value={(form.syllabus_coverage as any)?.completed || ""}
                   onChange={(e) => updateSyllabusCoverage('completed', parseInt(e.target.value) || 0)}
                   placeholder="e.g. 75"
                 />

@@ -13,8 +13,8 @@ import { UserPlus, Users, Calendar, Search } from "lucide-react";
 
 export default function HR() {
   const { schoolId } = useAuth();
-  const [teachers, setTeachers] = useState([]);
-  const [attendance, setAttendance] = useState([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -40,7 +40,7 @@ export default function HR() {
   };
 
   const loadAttendance = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('attendance')
       .select(`
         *,
@@ -60,7 +60,7 @@ export default function HR() {
   };
 
   const markAttendance = async (userId: string, status: string) => {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('attendance')
       .upsert({
         school_id: schoolId,

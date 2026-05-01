@@ -313,7 +313,7 @@ function TeacherAttendanceTab({ schoolId }: { schoolId: string }) {
     const records = Object.entries(attendance).map(([teacher_id, status]) => ({
       teacher_id, school_id: schoolId, date, status, recorded_by: user?.id,
     }));
-    const { error } = await supabase.from("teacher_attendance").upsert(records, { onConflict: "teacher_id,date" });
+    const { error } = await (supabase as any).from("teacher_attendance").upsert(records, { onConflict: "teacher_id,date" });
     if (error) toast.error(getUserFriendlyError(error));
     else toast.success(`Teacher attendance saved`);
     setSaving(false);

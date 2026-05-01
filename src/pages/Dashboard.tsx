@@ -526,17 +526,17 @@ const handleEdit = (staffMember: any) => {
   {/* ለዳይሬክተሩ ብቻ የሚታዩ የAdd Staff በተኖች */}
   {isDirector && (
     <>
-      <AddStaffModal role="record_office" schoolId={schoolId!} />
-      <AddStaffModal role="vice_admin" schoolId={schoolId!} />
-      <AddStaffModal role="vice_academic" schoolId={schoolId!} />
+      <AddStaffModal role="record_office" schoolId={schoolId!} label="Record Office" />
+      <AddStaffModal role="vice_admin" schoolId={schoolId!} label="Vice Admin" />
+      <AddStaffModal role="vice_academic" schoolId={schoolId!} label="Vice Academic" />
     </>
   )}
 
   {/* ለቪፒ አድሚን ብቻ የሚታዩ የHR እና Casher በተኖች */}
   {isViceAdmin && (
     <>
-      <AddStaffModal role="human_resource" schoolId={schoolId!} />
-      <AddStaffModal role="casher" schoolId={schoolId!} />
+      <AddStaffModal role="human_resource" schoolId={schoolId!} label="Human Resource" />
+      <AddStaffModal role="casher" schoolId={schoolId!} label="Cashier" />
     </>
   )}
 

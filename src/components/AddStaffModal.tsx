@@ -27,19 +27,21 @@ export function AddStaffModal({ role, schoolId, label }: { role: string, schoolI
 
     setLoading(true);
     try {
-      // Call the RPC with proper parameters
-      // RPC expects: p_school_id (uuid), p_role (app_role defaults to school_admin), p_position (admin_position)
       const { data, error } = await supabase.rpc("generate_staff_invite_with_data", {
+        p_email: formData.email.trim(),
+        p_first_name: formData.firstName.trim(),
+        p_last_name: formData.lastName.trim(),
+        p_phone: formData.phone.trim(),
+        p_role: role,
         p_school_id: schoolId,
-        p_role: "school_admin",
-        p_position: role
+        p_year: formData.year,
       });
 
       if (error) {
         console.error("RPC Error:", error);
         toast.error(error.message || "Failed to generate invite");
-      } else if (data && data.success) {
-        setGeneratedCode(data.invite_code);
+      } else if (data) {
+        setGeneratedCode(data);
         toast.success(`${label} invite generated successfully!`);
         // Clear form
         setFormData({
