@@ -20,6 +20,7 @@ export default function ParentPortal() {
     if (!user) return;
     const fetchData = async () => {
       setLoading(true);
+      const db = supabase as any;
 
       // Get linked students
       const { data: links } = await supabase.from("parent_students")
@@ -33,27 +34,27 @@ export default function ParentPortal() {
   const studentIds = linkedStudents.map(s => s.id);
 
   // 1. መጀመሪያ የተማሪዎቹን የዘንድሮ ምዝገባ (Enrollments) እንፈልጋለን
-  const { data: enrollments } = await supabase.from("enrollments")
+  const { data: entrollments } = await db.from("entrollments")
     .select("id, student_id")
     .in("student_id", studentIds)
     .eq("status", "active");
 
-  const enrollmentIds = (enrollments ?? []).map(e => e.id);
+  const entrollmentIds = (entrollments ?? []).map((e: any) => e.id);
 
-  if (enrollmentIds.length > 0) {
+  if (entrollmentIds.length > 0) {
     // 2. አሁን ውጤቱን በ enrollment_id እንጠራለን
-    const { data: gradeData } = await supabase.from("grades")
-      .select("score, grade, term, subjects(name), enrollments(students(first_name, last_name))")
-      .in("enrollment_id", enrollmentIds)
+    const { data: gradeData } = await db.from("grades")
+      .select("score, grade, term, subjects(name), entrollments(students(first_name, last_name))")
+      .in("entrollment_id", entrollmentIds)
       .order("created_at", { ascending: false })
       .limit(50);
     setGrades(gradeData ?? []);
 
     // 3. መገኘቱንም በ enrollment_id እና በ attendance_date እንጠራለን
-    const { data: attData } = await supabase.from("student_attendance")
-      .select("attendance_date, status, enrollments(students(first_name, last_name))")
-      .in("enrollment_id", enrollmentIds)
-      .order("attendance_date", { ascending: false })
+    const { data: attData } = await db.from("student_attendance")
+      .select("date, status, entrollments(students(first_name, last_name))")
+      .in("entrollment_id", entrollmentIds)
+      .order("date", { ascending: false })
       .limit(30);
     setAttendance(attData ?? []);
   }
