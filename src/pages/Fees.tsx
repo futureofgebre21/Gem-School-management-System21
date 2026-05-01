@@ -20,6 +20,7 @@ function FeeStructureTab({ schoolId }: { schoolId: string }) {
   const [years, setYears] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ 
     name: "", 
     amount: "", 
@@ -172,6 +173,7 @@ function PaymentsTab({ schoolId }: { schoolId: string }) {
   const [students, setStudents] = useState<any[]>([]);
   const [fees, setFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ 
     student_id: "", 
     fee_structure_id: "", 
@@ -202,13 +204,13 @@ function PaymentsTab({ schoolId }: { schoolId: string }) {
     const { error } = await supabase.from("fee_payments").insert({
       student_id: form.student_id,
       fee_structure_id: form.fee_structure_id,
-      amount: parseFloat(form.amount),
+      amount_paid: parseFloat(form.amount),
       payment_method: form.payment_method,
       payment_date: form.payment_date,
-      transaction_id: form.transaction_id || null,
+      receipt_number: form.transaction_id || null,
       remarks: form.remarks || null,
       school_id: schoolId,
-      collected_by: user?.id,
+      recorded_by: user?.id,
     });
     if (error) { toast.error(getUserFriendlyError(error)); return; }
     toast.success("Payment recorded");
@@ -258,7 +260,7 @@ function PaymentsTab({ schoolId }: { schoolId: string }) {
                   <Label>Fee *</Label>
                   <Select value={form.fee_structure_id} onValueChange={v => {
                     const fee = fees.find(f => f.id === v);
-                    setForm({ ...form, fee_structure_id: v, amount_paid: fee ? String(fee.amount) : form.amount_paid });
+                    setForm({ ...form, fee_structure_id: v, amount: fee ? String(fee.amount) : form.amount });
                   }}>
                     <SelectTrigger><SelectValue placeholder="Select fee" /></SelectTrigger>
                     <SelectContent>{fees.map(f => <SelectItem key={f.id} value={f.id}>{f.name} (₦{Number(f.amount).toLocaleString()})</SelectItem>)}</SelectContent>
