@@ -276,6 +276,15 @@ const handleEdit = (staffMember: any) => {
 };
 
 
+  // Route role-specific dashboards (composed from existing pages)
+  if (isDirector) return <DirectorDashboard />;
+  if (userRole === "vice_academic") return <ViceAcademicDashboard />;
+  if (isViceAdmin) return <ViceAdminDashboard />;
+  if (isRecordOffice) return <RecordOfficeDashboard />;
+  if (isHR) return <HRDashboard />;
+  if (userRole === "cashier" || isCasher) return <CashierDashboard />;
+  if (isTeacher) return <TeacherDashboard />;
+
   // Show linker for unlinked students/parents
   if ((isStudent || isParent) && linkedStudentId === null) {
     return <StudentLinker onLinked={() => setLinkedStudentId("refresh")} />;
