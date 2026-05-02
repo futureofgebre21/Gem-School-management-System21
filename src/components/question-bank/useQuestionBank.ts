@@ -101,33 +101,76 @@ export function useQuestionBank(opts?: { page?: number; subjectId?: string; grad
     mutationFn: async (rows: ParsedQuestion[]) => {
       const mapped = rows.filter(r => r.errors.length === 0).map(r => ({
         subject_id: r.subject_id!,
-        grade_level: r.grade_level,
-        question_text: r.question_text,
-        option_a: r.option_a,
-        option_b: r.option_b,
-        option_c: r.option_c,
-        option_d: r.option_d,
-        correct_answer: r.correct_answer.toUpperCase(),
-        explanation: r.explanation || "",
-        difficulty_level: r.difficulty_level?.toLowerCase() || "medium",
+        grade_level: r.grade_level.trim(),
+        question_text: r.question_text.trim(),
+        option_a: r.option_a.trim(),
+        option_b: r.option_b.trim(),
+        option_c: r.option_c.trim(),
+        option_d: r.option_d.trim(),
+        correct_answer: r.correct_answer.toUpperCase().trim(),
+        explanation: (r.explanation || "").trim(),
+        difficulty_level: (r.difficulty_level || "medium").toLowerCase().trim(),
         school_id: schoolId!,
         created_by: user?.id,
       }));
       if (!mapped.length) throw new Error("No valid questions to import");
-      // Insert in batches of 100
-      for (let i = 0; i < mapped.length; i += 100) {
-        const batch = mapped.slice(i, i + 100);
-        const { error } = await supabase.from("exam_questions_bank").insert(batch);
-        if (error) throw error;
+
+      const BATCH = 100;
+      const PARALLEL = 4;
+      let inserted = 0;
+      let duplicates = 0;
+      const batches: typeof mapped[] = [];
+      for (let i = 0; i < mapped.length; i += BATCH) batches.push(mapped.slice(i, i + BATCH));
+
+      for (let i = 0; i < batches.length; i += PARALLEL) {
+        const slice = batches.slice(i, i + PARALLEL);
+        const results = await Promise.all(slice.map(async (batch) => {
+          const { data, error } = await supabase
+            .from("exam_questions_bank")
+            .insert(batch)
+            .select("id");
+          if (!error) return { ok: data?.length ?? 0, dup: 0 };
+          if ((error as any).code !== "23505") throw error;
+          // One row in this batch is a duplicate — retry per-row to count precisely
+          let ok = 0, dup = 0;
+          for (const row of batch) {
+            const r = await supabase.from("exam_questions_bank").insert(row).select("id");
+            if (!r.error) ok++;
+            else if ((r.error as any).code === "23505") dup++;
+            else throw r.error;
+          }
+          return { ok, dup };
+        }));
+        for (const r of results) { inserted += r.ok; duplicates += r.dup; }
       }
-      return mapped.length;
+
+      return { inserted, duplicates, total: mapped.length };
     },
-    onSuccess: (count) => {
+    onSuccess: ({ inserted, duplicates }) => {
       queryClient.invalidateQueries({ queryKey: ["exam_questions"] });
-      toast({ title: `${count} questions imported successfully` });
+      toast({
+        title: `${inserted} questions imported`,
+        description: duplicates > 0 ? `${duplicates} duplicate(s) skipped` : undefined,
+      });
     },
     onError: (e: any) => toast({ title: "Import failed", description: e.message, variant: "destructive" }),
   });
 
-  return { subjects, questions, isLoading, isStaff, schoolId, user, addQuestion, updateQuestion, deleteQuestion, bulkInsert };
+  return {
+    subjects,
+    questions,
+    totalCount,
+    page,
+    pageCount,
+    pageSize: PAGE_SIZE,
+    isLoading,
+    isStaff,
+    schoolId,
+    user,
+    addQuestion,
+    updateQuestion,
+    deleteQuestion,
+    bulkInsert,
+  };
 }
+
