@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Edit, Upload } from "lucide-react";
+import { Plus, Search, Trash2, Edit, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuestionBank } from "@/components/question-bank/useQuestionBank";
 import QuestionFormDialog from "@/components/question-bank/QuestionFormDialog";
 import BulkUploadDialog from "@/components/question-bank/BulkUploadDialog";
@@ -13,12 +13,22 @@ import { emptyForm } from "@/components/question-bank/types";
 import type { QuestionForm } from "@/components/question-bank/types";
 
 export default function QuestionBank() {
-  const { subjects, questions, isLoading, isStaff, addQuestion, updateQuestion, deleteQuestion, bulkInsert } = useQuestionBank();
-
   const [search, setSearch] = useState("");
   const [filterSubject, setFilterSubject] = useState("all");
   const [filterDifficulty, setFilterDifficulty] = useState("all");
   const [filterGrade, setFilterGrade] = useState("all");
+  const [page, setPage] = useState(0);
+
+  // Reset to first page whenever filters change
+  const resetPage = (fn: (v: string) => void) => (v: string) => { fn(v); setPage(0); };
+
+  const { subjects, questions, isLoading, isStaff, totalCount, pageCount, pageSize, addQuestion, updateQuestion, deleteQuestion, bulkInsert } = useQuestionBank({
+    page,
+    subjectId: filterSubject,
+    grade: filterGrade,
+    difficulty: filterDifficulty,
+    search,
+  });
 
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -26,16 +36,8 @@ export default function QuestionBank() {
   const [editId, setEditId] = useState("");
   const [form, setForm] = useState<QuestionForm>({ ...emptyForm });
 
-  const filtered = useMemo(() => {
-    if (!questions) return [];
-    return questions.filter(q => {
-      if (filterSubject !== "all" && q.subject_id !== filterSubject) return false;
-      if (filterDifficulty !== "all" && q.difficulty_level !== filterDifficulty) return false;
-      if (filterGrade !== "all" && q.grade_level !== filterGrade) return false;
-      if (search && !q.question_text.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    });
-  }, [questions, filterSubject, filterDifficulty, filterGrade, search]);
+  // Server-side filtered/paginated result
+  const filtered = questions ?? [];
 
   const grades = useMemo(() => {
     if (!questions) return [];
@@ -79,7 +81,7 @@ export default function QuestionBank() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Question Bank Manager</h1>
           <p className="text-sm text-muted-foreground">
-            Upload, manage, and organize exam questions &middot; {questions?.length ?? 0} total questions
+            Upload, manage, and organize exam questions &middot; {totalCount} total questions
           </p>
         </div>
         {isStaff && (
@@ -100,23 +102,23 @@ export default function QuestionBank() {
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search questions..." className="pl-9" />
+              <Input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search questions..." className="pl-9" />
             </div>
-            <Select value={filterSubject} onValueChange={setFilterSubject}>
+            <Select value={filterSubject} onValueChange={resetPage(setFilterSubject)}>
               <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="All Subjects" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Subjects</SelectItem>
                 {subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={filterGrade} onValueChange={setFilterGrade}>
+            <Select value={filterGrade} onValueChange={resetPage(setFilterGrade)}>
               <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Grades" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Grades</SelectItem>
                 {grades.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
+            <Select value={filterDifficulty} onValueChange={resetPage(setFilterDifficulty)}>
               <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Levels" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Levels</SelectItem>
@@ -167,6 +169,21 @@ export default function QuestionBank() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          {totalCount > pageSize && (
+            <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t">
+              <span className="text-sm text-muted-foreground">
+                Page {page + 1} of {pageCount} &middot; {totalCount} questions
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= pageCount - 1} onClick={() => setPage(p => p + 1)}>
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

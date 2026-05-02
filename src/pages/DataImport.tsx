@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { FileUp, Upload, CheckCircle2, AlertCircle, Download, X } from "lucide-react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 type ImportTarget = "students" | "teachers";
 
@@ -49,37 +49,56 @@ export default function DataImport() {
     setResult(null);
     setFileName(file.name);
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
+    (async () => {
       try {
-        const data = evt.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json: ParsedRow[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        const buffer = await file.arrayBuffer();
+        const isCSV = /\.csv$/i.test(file.name);
+        let rawRows: string[][] = [];
 
-        if (json.length === 0) {
+        if (isCSV) {
+          const text = new TextDecoder("utf-8").decode(buffer);
+          // Simple CSV split (header + rows). For production-grade RFC4180 parsing,
+          // the Question Bank uses a stricter parser; this is sufficient for templates.
+          const lines = text.split(/\r?\n/).filter(l => l.trim());
+          rawRows = lines.map(l => l.split(",").map(c => c.trim().replace(/^"|"$/g, "")));
+        } else {
+          const wb = new ExcelJS.Workbook();
+          await wb.xlsx.load(buffer);
+          const sheet = wb.worksheets[0];
+          if (sheet) {
+            sheet.eachRow({ includeEmpty: false }, (row) => {
+              const arr: string[] = [];
+              row.eachCell({ includeEmpty: true }, (cell) => {
+                const v = cell.value;
+                if (v == null) arr.push("");
+                else if (typeof v === "object" && "text" in (v as any)) arr.push(String((v as any).text ?? ""));
+                else if (typeof v === "object" && "result" in (v as any)) arr.push(String((v as any).result ?? ""));
+                else arr.push(String(v));
+              });
+              rawRows.push(arr);
+            });
+          }
+        }
+
+        if (rawRows.length < 2) {
           toast.error("The file appears to be empty");
           return;
         }
 
-        // Normalize column names: lowercase, trim, replace spaces with underscores
-        const normalized = json.map(row => {
+        const headers = rawRows[0].map(h => h.trim().toLowerCase().replace(/\s+/g, "_"));
+        const normalized: ParsedRow[] = rawRows.slice(1).map(r => {
           const newRow: ParsedRow = {};
-          Object.entries(row).forEach(([key, val]) => {
-            const normalizedKey = key.trim().toLowerCase().replace(/\s+/g, "_");
-            newRow[normalizedKey] = String(val).trim();
-          });
+          headers.forEach((h, idx) => { newRow[h] = String(r[idx] ?? "").trim(); });
           return newRow;
         });
 
-        setColumns(Object.keys(normalized[0]));
+        setColumns(headers);
         setParsedData(normalized);
         toast.success(`Parsed ${normalized.length} rows from ${file.name}`);
       } catch {
         toast.error("Failed to parse file. Please use a valid CSV or Excel file.");
       }
-    };
-    reader.readAsBinaryString(file);
+    })();
   };
 
   const clearFile = () => {
@@ -145,12 +164,21 @@ export default function DataImport() {
     if (failed > 0) toast.error(`${failed} rows failed to import`);
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const cols = target === "students" ? STUDENT_COLUMNS : TEACHER_COLUMNS;
-    const ws = XLSX.utils.aoa_to_sheet([cols]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, `${target}_import_template.xlsx`);
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("Template");
+    ws.addRow(cols);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${target}_import_template.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
