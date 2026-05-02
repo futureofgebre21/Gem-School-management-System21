@@ -71,7 +71,11 @@ export function useQuestionBank(opts?: { page?: number; subjectId?: string; grad
       queryClient.invalidateQueries({ queryKey: ["exam_questions"] });
       toast({ title: "Question added successfully" });
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({
+      title: "Error",
+      description: e.code === "23505" ? "This question already exists in the bank." : e.message,
+      variant: "destructive",
+    }),
   });
 
   const updateQuestion = useMutation({
