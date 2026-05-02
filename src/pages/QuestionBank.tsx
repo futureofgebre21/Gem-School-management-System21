@@ -102,23 +102,23 @@ export default function QuestionBank() {
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search questions..." className="pl-9" />
+              <Input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search questions..." className="pl-9" />
             </div>
-            <Select value={filterSubject} onValueChange={setFilterSubject}>
+            <Select value={filterSubject} onValueChange={resetPage(setFilterSubject)}>
               <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="All Subjects" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Subjects</SelectItem>
                 {subjects?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={filterGrade} onValueChange={setFilterGrade}>
+            <Select value={filterGrade} onValueChange={resetPage(setFilterGrade)}>
               <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Grades" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Grades</SelectItem>
                 {grades.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
+            <Select value={filterDifficulty} onValueChange={resetPage(setFilterDifficulty)}>
               <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Levels" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Levels</SelectItem>
