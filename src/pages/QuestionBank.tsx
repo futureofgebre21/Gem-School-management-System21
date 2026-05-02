@@ -171,6 +171,21 @@ export default function QuestionBank() {
               </Table>
             </div>
           )}
+          {totalCount > pageSize && (
+            <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t">
+              <span className="text-sm text-muted-foreground">
+                Page {page + 1} of {pageCount} &middot; {totalCount} questions
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= pageCount - 1} onClick={() => setPage(p => p + 1)}>
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
