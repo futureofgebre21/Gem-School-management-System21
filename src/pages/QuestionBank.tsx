@@ -81,7 +81,7 @@ export default function QuestionBank() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Question Bank Manager</h1>
           <p className="text-sm text-muted-foreground">
-            Upload, manage, and organize exam questions &middot; {questions?.length ?? 0} total questions
+            Upload, manage, and organize exam questions &middot; {totalCount} total questions
           </p>
         </div>
         {isStaff && (
