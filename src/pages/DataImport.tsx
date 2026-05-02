@@ -164,12 +164,21 @@ export default function DataImport() {
     if (failed > 0) toast.error(`${failed} rows failed to import`);
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const cols = target === "students" ? STUDENT_COLUMNS : TEACHER_COLUMNS;
-    const ws = XLSX.utils.aoa_to_sheet([cols]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, `${target}_import_template.xlsx`);
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("Template");
+    ws.addRow(cols);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${target}_import_template.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
