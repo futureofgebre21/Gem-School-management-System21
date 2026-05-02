@@ -37,7 +37,7 @@ export default function BulkUploadDialog({ open, onOpenChange, subjects, onImpor
     setUploading(true);
     try {
       const buffer = await file.arrayBuffer();
-      const rows = parseExcelOrCSV(buffer, file.name);
+      const rows = await parseExcelOrCSV(buffer, file.name);
       if (!rows.length) {
         toast({ title: "No data found", description: "The file appears to be empty", variant: "destructive" });
         return;
