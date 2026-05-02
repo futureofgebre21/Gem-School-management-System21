@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Edit, Upload } from "lucide-react";
+import { Plus, Search, Trash2, Edit, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuestionBank } from "@/components/question-bank/useQuestionBank";
 import QuestionFormDialog from "@/components/question-bank/QuestionFormDialog";
 import BulkUploadDialog from "@/components/question-bank/BulkUploadDialog";
@@ -13,12 +13,22 @@ import { emptyForm } from "@/components/question-bank/types";
 import type { QuestionForm } from "@/components/question-bank/types";
 
 export default function QuestionBank() {
-  const { subjects, questions, isLoading, isStaff, addQuestion, updateQuestion, deleteQuestion, bulkInsert } = useQuestionBank();
-
   const [search, setSearch] = useState("");
   const [filterSubject, setFilterSubject] = useState("all");
   const [filterDifficulty, setFilterDifficulty] = useState("all");
   const [filterGrade, setFilterGrade] = useState("all");
+  const [page, setPage] = useState(0);
+
+  // Reset to first page whenever filters change
+  const resetPage = (fn: (v: string) => void) => (v: string) => { fn(v); setPage(0); };
+
+  const { subjects, questions, isLoading, isStaff, totalCount, pageCount, pageSize, addQuestion, updateQuestion, deleteQuestion, bulkInsert } = useQuestionBank({
+    page,
+    subjectId: filterSubject,
+    grade: filterGrade,
+    difficulty: filterDifficulty,
+    search,
+  });
 
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -26,16 +36,8 @@ export default function QuestionBank() {
   const [editId, setEditId] = useState("");
   const [form, setForm] = useState<QuestionForm>({ ...emptyForm });
 
-  const filtered = useMemo(() => {
-    if (!questions) return [];
-    return questions.filter(q => {
-      if (filterSubject !== "all" && q.subject_id !== filterSubject) return false;
-      if (filterDifficulty !== "all" && q.difficulty_level !== filterDifficulty) return false;
-      if (filterGrade !== "all" && q.grade_level !== filterGrade) return false;
-      if (search && !q.question_text.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    });
-  }, [questions, filterSubject, filterDifficulty, filterGrade, search]);
+  // Server-side filtered/paginated result
+  const filtered = questions ?? [];
 
   const grades = useMemo(() => {
     if (!questions) return [];
