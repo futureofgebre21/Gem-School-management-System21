@@ -4,15 +4,27 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 import type { QuestionForm, ParsedQuestion } from "./types";
 
-export function useQuestionBank() {
+const STAFF_ROLES = new Set([
+  "super_admin",
+  "school_admin",
+  "teacher",
+  "director",
+  "vice_academic",
+]);
+
+const PAGE_SIZE = 50;
+
+export function useQuestionBank(opts?: { page?: number; subjectId?: string; grade?: string; difficulty?: string; search?: string }) {
   const { user, schoolId, userRole } = useAuth();
   const queryClient = useQueryClient();
-  const isStaff = userRole === "super_admin" || userRole === "school_admin" || userRole === "teacher";
+  const isStaff = STAFF_ROLES.has(userRole ?? "");
+
+  const page = opts?.page ?? 0;
 
   const { data: subjects } = useQuery({
     queryKey: ["subjects", schoolId],
     queryFn: async () => {
-      const q = supabase.from("subjects").select("*");
+      const q = supabase.from("subjects").select("id,name");
       if (schoolId) q.eq("school_id", schoolId);
       const { data, error } = await q;
       if (error) throw error;
@@ -21,17 +33,30 @@ export function useQuestionBank() {
     enabled: !!schoolId,
   });
 
-  const { data: questions, isLoading } = useQuery({
-    queryKey: ["exam_questions", schoolId],
+  const { data: questionsPage, isLoading } = useQuery({
+    queryKey: ["exam_questions", schoolId, page, opts?.subjectId, opts?.grade, opts?.difficulty, opts?.search],
     queryFn: async () => {
-      let q = supabase.from("exam_questions_bank").select("*, subjects(name)");
+      let q = supabase
+        .from("exam_questions_bank")
+        .select("*, subjects(name)", { count: "exact" });
       if (schoolId) q = q.eq("school_id", schoolId);
-      const { data, error } = await q.order("created_at", { ascending: false });
+      if (opts?.subjectId && opts.subjectId !== "all") q = q.eq("subject_id", opts.subjectId);
+      if (opts?.grade && opts.grade !== "all") q = q.eq("grade_level", opts.grade);
+      if (opts?.difficulty && opts.difficulty !== "all") q = q.eq("difficulty_level", opts.difficulty);
+      if (opts?.search?.trim()) q = q.ilike("question_text", `%${opts.search.trim()}%`);
+      const { data, error, count } = await q
+        .order("created_at", { ascending: false })
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
       if (error) throw error;
-      return data;
+      return { rows: data ?? [], total: count ?? 0 };
     },
     enabled: !!schoolId,
+    placeholderData: (prev) => prev,
   });
+
+  const questions = questionsPage?.rows;
+  const totalCount = questionsPage?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const addQuestion = useMutation({
     mutationFn: async (form: QuestionForm) => {

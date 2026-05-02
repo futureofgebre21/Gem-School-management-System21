@@ -413,6 +413,7 @@ export type Database = {
       }
       exam_questions_bank: {
         Row: {
+          content_hash: string | null
           correct_answer: string
           created_at: string
           created_by: string | null
@@ -430,6 +431,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          content_hash?: string | null
           correct_answer: string
           created_at?: string
           created_by?: string | null
@@ -447,6 +449,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          content_hash?: string | null
           correct_answer?: string
           created_at?: string
           created_by?: string | null
