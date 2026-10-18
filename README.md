@@ -4,7 +4,6 @@ Welcome to the official repository for **GemSIS**, a modern, scalable, and compr
 
 ## 🌍 Live Project
 
-**URL**: [https://gemschool-management.vercel.app](https://gemschool-management.vercel.app)
 
 ## 🚀 Technologies Used
 
